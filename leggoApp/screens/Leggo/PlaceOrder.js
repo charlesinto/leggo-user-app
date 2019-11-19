@@ -1,27 +1,31 @@
 import React, { Component } from 'react';
 import { View, SafeAreaView, KeyboardAvoidingView,ScrollView, 
-    StyleSheet, Platform,FlatList, TouchableWithoutFeedback, Image } from "react-native";
-import { Card, Item,CardItem, Input,Text, Label, Form, Button, CheckBox } from "native-base";
+     Platform,FlatList, TouchableWithoutFeedback, Image } from "react-native";
+import { Card, Item,CardItem, Input,Text, Label, Form, Button, CheckBox, Toast } from "native-base";
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import { connect } from "react-redux";
 import Colors from "../../constants/Colors";
-import { customStyles } from "../../constants/styles";
+import { customStyles, styles } from "../../constants/styles";
 import * as actions from "../../actions";
 
 class PlaceOrder extends Component {
     state = {
         extraPackaging: false,
+        sameAsSender: false,
         parcelType: [],
-        receiver: {
-            fullName: '',
-            phoneNumber: '',
-            email: '',
-        },
+        pickup: '',
+        destination: '',
         sender: {
+            fullName: 'charles onuorah',
+            phoneNumber: '07010671710',
+            email: 'charles.onuorah@yahoo.com',
+        },
+        receiver: {
             fullName: '',
             email:'',
             phoneNumber: ''
-        }
+        },
+        isFormValid: false
     }
     static navigationOptions = ({ navigation }) => {
         return {
@@ -49,25 +53,88 @@ class PlaceOrder extends Component {
                         </View>
                     </CardItem>)
     }
+    handeSameAsSenderCheck = () => {
+        this.setState({
+            sameAsSender: !this.state.sameAsSender,
+            receiver: this.state.sender
+        })
+    }
     handleOnChange = (parent='', target='', value='') => {
         if(parent.trim() != ''){
-            this.setState({
+            return this.setState({
                 [parent]: {...this.state[parent], [target]: value}
+            }, () => {
+               this.setState({
+                   isFormValid : this.validateInput().isValid,
+                   message: this.validateInput().message
+               }) 
             })
         }
+        return this.setState({
+            [target]: value
+        }, () => {
+            this.setState({
+                isFormValid: this.validateInput().isValid,
+                message: this.validateInput().message
+            })
+        })
+        
     }
-    selectParcelSize = type => {
+    validateInput = () => {
+        let isValid = false;
+        if(this.state.sender){
+            const { fullName, phoneNumber, email} = this.state.sender;
+            if(fullName && fullName.trim() !== '' && (email && email.trim() !== '')
+                && (phoneNumber && phoneNumber.trim() !== '')){
+                    isValid = true
+                }else {
+                    isValid = false;
+                    return {isValid, message: `Please complete sender's Details`};
+                }
+                
+        }
+        if(this.state.receiver){
+            const { fullName, phoneNumber, email} = this.state.receiver;
+            if(fullName && fullName.trim() !== '' && (email && email.trim() !== '')
+                && (phoneNumber && phoneNumber.trim() !== '')){
+                    isValid = true
+                }else {
+                    isValid = false;
+                    return {isValid, message: `Please complete receiver's details`};
+                }
+        }
+        if(this.props.selectedItems.length > 0){
+            isValid = true;
+           return {isValid, message: ''};
+        }
+        else if(this.props.selectedItems.length == 0){
+            isValid = false
+            return {isValid, message: 'Please select delivery item(s)'}
+        }
+        if(this.state.parcelType.length > 0){
+            console.log('in')
+            isValid = true
+            return isValid
+        }else{
+            console.log('here')
+            isValid = false
+            return {isValid, message: 'Please select parcel size'}
+        }
+        
+        
+    }
+    selectParcelSize = (type, url) => {
         let newParcels = [];
         let index = null;
         switch(type){
-            case 'envelop':
+            case 'Envelope':
                 newParcels = this.state.parcelType;
                 index = this.state.parcelType.findIndex(item => item.type === type)
                 if(index === -1){
                     this._envelop.setNativeProps({
                         borderColor:  Colors.iconColor
                     })
-                    newParcels.push({type, count: 1})
+                    newParcels.push({type, count: 1, url, id: Math.floor(1 + Math.random() * 1000)})
                 }else{
                     this._envelop.setNativeProps({
                         borderColor:  '#c3c3c3'
@@ -76,16 +143,19 @@ class PlaceOrder extends Component {
                 }
                 this.setState({
                     parcelType: [...newParcels]
-                })
+                }, () => this.setState({
+                    isFormValid : this.validateInput().isValid,
+                    message: this.validateInput().message
+                }) )
             break;
-            case 'mediumBox':
+            case 'Medium Box':
                  newParcels = this.state.parcelType;
                 index = this.state.parcelType.findIndex(item => item.type === type)
                 if(index === -1){
                     this._mediumBox.setNativeProps({
                         borderColor:  Colors.iconColor
                     })
-                    newParcels.push({type, count: 1})
+                    newParcels.push({type, count: 1, url, id: Math.floor(1 + Math.random() * 1000)})
                 }else{
                     this._mediumBox.setNativeProps({
                         borderColor:  '#c3c3c3'
@@ -94,16 +164,19 @@ class PlaceOrder extends Component {
                 }
                 this.setState({
                     parcelType: [...newParcels]
-                })
+                }, () => this.setState({
+                    isFormValid : this.validateInput().isValid,
+                    message: this.validateInput().message
+                }) )
             break;
-            case 'bigBox':
+            case 'Big Box':
                  newParcels = this.state.parcelType;
                 index = newParcels.findIndex(item => item.type === type)
                 if(index === -1){
                     this._bigBox.setNativeProps({
                         borderColor:  Colors.iconColor
                     })
-                    newParcels.push({type, count: 1})
+                    newParcels.push({type, count: 1, url, id: Math.floor(1 + Math.random() * 1000)})
                 }else{
                     this._bigBox.setNativeProps({
                         borderColor:  '#c3c3c3'
@@ -112,28 +185,72 @@ class PlaceOrder extends Component {
                 }
                 this.setState({
                     parcelType: [...newParcels]
-                })
+                }, () => this.setState({
+                    isFormValid : this.validateInput().isValid,
+                    message: this.validateInput().message
+                }) )
             break;
             default:
                 break;
         }
     }
     handleSubmit = () =>{
-        console.log(this.state)
+        const {isValid, message} = this.validateInput()
+        if(!isValid){
+             Toast.show({
+                text: message,
+                type: "warning",
+                position: "top"
+            })
+            return ;
+        }
+        this.props.newShipment({...this.state, selectedItems: this.props.selectedItems})
+        this.props.navigation.navigate('NewShipment')
     }
     render() {
         return (
-            
             <KeyboardAvoidingView behavior="padding" enabled style={{ display: 'flex', flex: 1 }}>
                 <SafeAreaView style={{ display: 'flex', flex: 1 }}>
                     <ScrollView style={{ display: 'flex', flex: 1 }}>
                         <View style={styles.AppContainer}>
+                            <View style={{display: 'flex', width:'100%'}}>
+                                <View style={{display:'flex', flex: 0.1}}>
+                                
+                                </View>
+                                <View style={{display:'flex', flex: 0.9}}>
+                                    <Item regular>
+                                        <FontAwesome name="map-marker" size={26}
+                                            style={{paddingLeft: 8}}
+                                        />
+                                        <Input
+                                            placeholder="Pickup Location"
+                                            selectionColor={Colors.primaryCOlor}
+                                            value={this.state.pickup}
+                                            style={styles.addressInputStyle}
+                                            onChangeText={(text) => this.handleOnChange('', 'pickup', text)}
+                                        />
+                                    </Item>
+                                    <Item regular>
+                                        <FontAwesome name="map-marker" size={26} 
+                                            style={{paddingLeft: 8}}
+                                        />
+                                        <Input 
+                                            selectionColor={Colors.primaryCOlor}
+                                            placeholder="Destination"
+                                            value={this.state.destination}
+                                            style={styles.addressInputStyle}
+                                            onChangeText={(text) => this.handleOnChange('', 'destination', text)}
+                                        />
+                                    </Item>
+                                </View>
+                            </View>
                             <Text style={styles.senderStyle}>SENDER</Text>
+                            
                             <View>
                                 <Card style={styles.cardContainerStyle}>
-                                    <Text style={{ ...styles.textLineStyle, ...styles.senderName, }}>Onuorah Charles</Text>
-                                    <Text style={{ ...styles.textLineStyle }}>charles.onuorah@yahoo.com</Text>
-                                    <Text style={{ ...styles.textLineStyle }}>07010671710</Text>
+                                    <Text style={{ ...styles.textLineStyle, ...styles.senderName, }}>{this.state.sender.fullName}</Text>
+                                    <Text style={{ ...styles.textLineStyle }}>{this.state.sender.email}</Text>
+                                    <Text style={{ ...styles.textLineStyle }}>{this.state.sender.phoneNumber}</Text>
                                     <View style={{ ...styles.iconContainerStyle }}>
                                         <Ionicons
                                             name={
@@ -150,28 +267,55 @@ class PlaceOrder extends Component {
 
                             </View>
                             <Text style={styles.senderStyle}>RECEIVER</Text>
-                            <View>
-                                <Card style={styles.cardContainerStyle}>
-                                    <Form>
-                                        <Item stackedLabel>
-                                            <Label>Full Name</Label>
-                                            <Input value={this.state.receiver.fullName} onChangeText={(text) => this.handleOnChange('receiver','fullName', text)} selectionColor={Colors.primaryCOlor} />
-                                        </Item>
-                                        <Item stackedLabel>
-                                            <Label>Phone Number</Label>
-                                            <Input 
-                                                value={this.state.receiver.phoneNumber}
-                                                selectionColor={Colors.primaryCOlor} onChangeText={(text) => this.handleOnChange('receiver','phoneNumber', text)} keyboardType="number-pad" />
-                                        </Item>
-                                        <Item stackedLabel>
-                                            <Label>Email Address (Optional)</Label>
-                                            <Input
-                                                value={this.state.receiver.email}
-                                             selectionColor={Colors.primaryCOlor} onChangeText={(text) => this.handleOnChange('receiver','email', text)} keyboardType="email-address"  />
-                                        </Item>
-                                    </Form>
-                                </Card>
+                            <View style={{...styles.extraPackagingContainer, marginBottom: 8, marginTop: 6}}>
+                                <View style={{ marginRight: 16 }}>
+                                    <CheckBox checked={this.state.sameAsSender} onPress={this.handeSameAsSenderCheck} color={Colors.iconColor} style={{}} />
+                                </View>
+                                <Text style={{ paddingLeft: 8,  fontFamily: 'Roboto' }}>Same as sender</Text>
                             </View>
+                            {
+                                this.state.sameAsSender ?
+                                (
+                                    <View>
+                                        <Card style={styles.cardContainerStyle}>
+                                            <Text style={{ ...styles.textLineStyle, ...styles.senderName, }}>{this.state.sender.fullName}</Text>
+                                            <Text style={{ ...styles.textLineStyle }}>{this.state.sender.email}</Text>
+                                            <Text style={{ ...styles.textLineStyle }}>{this.state.sender.phoneNumber}</Text>
+                                        </Card>
+
+                                    </View>
+                                ) : 
+                                (
+                                    <View>
+                                        <Card style={styles.cardContainerStyle}>
+                                            <Form>
+                                                <Item regular>
+                                                    
+                                                    <Input 
+                                                        placeholder="Enter Full Name"
+                                                        style={styles.addressInputStyle}
+                                                        value={this.state.receiver.fullName} onChangeText={(text) => this.handleOnChange('receiver','fullName', text)} selectionColor={Colors.primaryCOlor} />
+                                                </Item>
+                                                <Item regular>
+                                                    <Input 
+                                                        placeholder="Enter Phone Number"
+                                                        style={styles.addressInputStyle}
+                                                        value={this.state.receiver.phoneNumber}
+                                                        selectionColor={Colors.primaryCOlor} onChangeText={(text) => this.handleOnChange('receiver','phoneNumber', text)} keyboardType="number-pad" />
+                                                </Item>
+                                                <Item regular>
+                                                    <Input
+                                                        placeholder="Email Address (optional)"
+                                                        value={this.state.receiver.email}
+                                                        style={styles.addressInputStyle}
+                                                    selectionColor={Colors.primaryCOlor} onChangeText={(text) => this.handleOnChange('receiver','email', text)} keyboardType="email-address"  />
+                                                </Item>
+                                            </Form>
+                                        </Card>
+                                    </View>
+                                )
+                            }
+                            
                             <Text style={styles.senderStyle}>ITEM DETAILS</Text>
                             <View>
                                 <Card>
@@ -227,7 +371,7 @@ class PlaceOrder extends Component {
                                     }}
                                     
                                 >
-                                    <TouchableWithoutFeedback onPress={() => this.selectParcelSize('envelop')}>
+                                    <TouchableWithoutFeedback onPress={() => this.selectParcelSize('Envelope', '../../assets/images/envelop.jpg')}>
                                         <View style={styles.parcelCardContainer} >
                                             <View 
                                                 ref={component => this._envelop = component} 
@@ -239,14 +383,14 @@ class PlaceOrder extends Component {
                                                 />
                                             </View>
                                             <View style={styles.parcelDescription}>
-                                                <Text style={styles.parcelName}>Envelop</Text>
+                                                <Text style={styles.parcelName}>Envelope</Text>
                                                 <Text style={styles.parcelDim}>54 x 42 x 32 cm</Text>
                                             </View>
                                             
                                         </View>
                                     </TouchableWithoutFeedback>
                                     <TouchableWithoutFeedback
-                                         onPress={() => this.selectParcelSize('mediumBox')}
+                                         onPress={() => this.selectParcelSize('Medium Box', '../../assets/images/big_box.jpg')}
                                     >
                                     <View style={styles.parcelCardContainer} >
                                         <View 
@@ -266,7 +410,7 @@ class PlaceOrder extends Component {
                                     </View>
                                     </TouchableWithoutFeedback>
                                     <TouchableWithoutFeedback
-                                         onPress={() => this.selectParcelSize('bigBox')}
+                                         onPress={() => this.selectParcelSize('Big Box', '../../assets/images/big_box.jpg')}
                                     >
 
                                     <View style={{...styles.parcelCardContainer,paddingRight:20}} >
@@ -294,7 +438,7 @@ class PlaceOrder extends Component {
                         
                     </ScrollView>
                     <View style={styles.CABcontainer}>
-                        <Button onPress={this.handleSubmit} full style={styles.continueButtonStyle}>
+                        <Button  onPress={this.handleSubmit} full style={ styles.continueButtonStyle}>
                             <Text>Continue</Text>
                         </Button>
                     </View>
@@ -305,97 +449,6 @@ class PlaceOrder extends Component {
     }
 }
 
-const styles = StyleSheet.create({
-    AppContainer: {
-        display: 'flex',
-        flex: 1,
-        flexDirection: 'column',
-        marginLeft: 16,
-        marginRight: 16
-    },
-    logoContainer: {
-        width: '100%',
-    },
-    mainContainer: {
-        flex: 0.6
-    },
-    senderStyle: {
-        color:'#8c8b8b',
-        padding: 10,
-        paddingLeft: 0,
-        fontSize: 12,
-        fontFamily:'Roboto'
-    },
-    cardContainerStyle: {
-        padding: 16
-    },
-    senderName: {
-        fontWeight: '600',
-        fontSize: 16,
-        color: '#000'
-    },
-    textLineStyle: {
-        marginBottom: 8,
-        color: '#8c8b8b'
-    },
-    iconContainerStyle: {
-        position: 'absolute',
-        top: 10,
-        right: 10
-    },
-    CABcontainer: {
-        position:"relative",
-
-    },
-    continueButtonStyle: {
-        backgroundColor: Colors.secondaryColor
-    },
-    itemHeaderStyle: {
-        display: 'flex',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        width: '100%'
-    },
-    extraPackagingContainer: {
-        display: "flex",
-        flexDirection: 'row',
-
-    },
-    selectedItemsStyle:{
-        fontFamily: 'Roboto',
-        fontSize: 12
-    },
-    parcelCardContainer: {
-        width: 120,
-        marginLeft: 10
-    },
-    parcelImageContainer: {
-        width:'100%', 
-        height: 120,
-        borderWidth: 4,
-        borderRadius: 4,
-        borderColor: '#c3c3c3'
-    },
-    parcelImage:{
-        width: undefined, 
-        height:undefined, 
-        flex: 1
-    },
-    parcelName: {
-        fontFamily: 'Roboto',
-        fontSize: 12,
-        fontWeight: '600'
-    },
-    parcelDim: {
-        fontFamily: 'space-mono',
-        fontSize: 10,
-        color: '#8c8b8b'
-    },
-    parcelDescription: {
-        paddingTop: 8,
-        paddingBottom: 8
-    }
-})
 
 const mapStateToProps = state => {
     const {order: {selectedItems}} = state;

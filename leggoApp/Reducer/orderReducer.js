@@ -1,4 +1,5 @@
-import { SELECT_DELIVERY_ITEM } from "../actions/type"
+import { SELECT_DELIVERY_ITEM, NEW_SHIPMENT, UPDATE_PARCEL_PACKAGE_COUNT, 
+    CONFIRM_SHIPMENT } from "../actions/type"
 
 const INITIAL_STATE = {
     items: [
@@ -10,15 +11,47 @@ const INITIAL_STATE = {
         { itemName: 'Pottery and Glass', id: 6 },
         { itemName: 'Musical Instruments', id: 7 }
     ],
-    selectedItems: []
+    selectedItems: [],
+    shipmentDetail: null,
+    pickupTime: null,
+    pickupTimeToLocale: null
 }
 export default (state=INITIAL_STATE, actions) => {
     switch(actions.type){
         case SELECT_DELIVERY_ITEM:
            return selectItem(actions.payload, state)
+        case NEW_SHIPMENT:
+            return {...state, shipmentDetail: actions.payload}
+
+        case UPDATE_PARCEL_PACKAGE_COUNT: 
+            return updateParcels(state, actions.payload)
+        case CONFIRM_SHIPMENT: 
+            const {pickupTimeToLocale, pickupTime} = actions.payload
+            return {...state, pickupTime, pickupTimeToLocale}
         default:
             return {...state}
     }
+}
+
+updateParcels = (state, payload) => {
+    const {shipmentDetail: {parcelType}} = state;
+    const index = parcelType.findIndex(element => element.id === payload.target)
+    let newParcels = []
+    let selectedParcel = parcelType[index]
+    switch(payload.type){
+        case 'decrease':
+            selectedParcel.count = selectedParcel.count > 1 ? selectedParcel.count - 1 : 1;
+        break;
+        case 'increase':
+            selectedParcel.count = selectedParcel.count + 1;
+        break;
+        default:
+            break;
+    }
+    newParcels = parcelType;
+    newParcels.splice(index, 1)
+    newParcels.push(selectedParcel)
+    return {...state, shipmentDetail: {...state.shipmentDetail, parcelType: newParcels}}
 }
 
 

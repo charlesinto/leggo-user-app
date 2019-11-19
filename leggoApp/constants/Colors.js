@@ -15,5 +15,9 @@ export default {
   primaryCOlor: '#f44336',
   secondaryColor: '#2979ff',
   headerTintColor: '#000',
-  iconColor: '#FFAF29'
+  iconColor: '#FFAF29',
+  success: '#28a745',
+  warning: '#ffc107',
+  danger: '#dc3545',
+  muted: '#6c757d'
 };

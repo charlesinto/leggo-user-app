@@ -7,6 +7,7 @@ import ReduxThunk from "redux-thunk";
 import { createStore, applyMiddleware } from "redux";
 import { Platform, StatusBar, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Root } from "native-base";
 
 import AppNavigator from './navigation/AppNavigator';
 import Reducer from "./Reducer";
@@ -27,10 +28,12 @@ export default function App(props) {
   } else {
     return (
       <Provider store={createStoreWithMiddleWare(Reducer)}>
-        <View style={styles.container}>
-          {Platform.OS === 'ios' && <StatusBar backgroundColor="#000" barStyle="default" />}
-          <AppNavigator />
-        </View>
+        <Root>
+          <View style={styles.container}>
+            {Platform.OS === 'ios' && <StatusBar backgroundColor="#000" barStyle="default" />}
+            <AppNavigator />
+          </View>
+        </Root>
       </Provider>
     );
   }
@@ -48,14 +51,20 @@ async function loadResourcesAsync() {
       'Roboto': require('native-base/Fonts/Roboto.ttf'),
       'Roboto_medium': require('native-base/Fonts/Roboto_medium.ttf'),
       'space-mono': require('./assets/fonts/SpaceMono-Regular.ttf'),
-      
+      'Montserrat': require('./assets/fonts/Montserrat-Regular.ttf'),
+      'Lato': require('./assets/fonts/Lato-Regular.ttf'),
+      'latoBold': require('./assets/fonts/Lato-Bold.ttf'),
+      'latoItalic': require('./assets/fonts/Lato-Italic.ttf'),
+       'MontserratBold': require('./assets/fonts/Montserrat-Bold.ttf'),
+       'MontserratExtraBold': require('./assets/fonts/Montserrat-ExtraBold.ttf'),
+       'MontserratMedium': require('./assets/fonts/Montserrat-Medium.ttf')
     }),
   ]);
 }
 
 function handleLoadingError(error) {
   // In this case, you might want to report the error to your error reporting
-  // service, for example Sentry
+  // service, for example Sentry ys no
   console.warn(error);
 }
 

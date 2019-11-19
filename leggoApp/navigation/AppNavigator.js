@@ -4,23 +4,31 @@ import { createAppContainer, createSwitchNavigator, createStackNavigator } from 
 import MainTabNavigator from './MainTabNavigator';
 import Login from "../screens/Auth/Login";
 import Signup from "../screens/Auth/Signup";
-import PlaceOrderScreen from "../screens/Leggo/PlaceOrder";
-import AddItemScreen from "../screens/Leggo/AddItemScreen";
-
+// import PlaceOrderScreen from "../screens/Leggo/PlaceOrder";
+// import AddItemScreen from "../screens/Leggo/AddItemScreen";
+// import NewShipment from "../screens/Leggo/NewShipment";
 const AuthStack = createStackNavigator({
   Login: Login,
   Signup: Signup,
   
 }, {
   initialRouteName: 'Login'
-})
+},
+)
 
-const APP_STACK = createStackNavigator({
-  PlaceOrder: PlaceOrderScreen,
-  AddItem: AddItemScreen
-}, {
-  initialRouteName: 'PlaceOrder'
-})
+// const APP_STACK = createStackNavigator({
+//   // PlaceOrder: PlaceOrderScreen
+//   NewShipment: NewShipment,
+//   AddItem: AddItemScreen,
+//   Tabs: {
+//     screen: MainTabNavigator,
+//     navigationOptions: {
+//         header: null,
+//     },
+//   }
+// }, {
+//   initialRouteName: 'Tabs'
+// }, )
 
 export default createAppContainer(
   createSwitchNavigator({
@@ -28,9 +36,9 @@ export default createAppContainer(
     // Read more at https://reactnavigation.org/docs/en/auth-flow.html
     Main: MainTabNavigator,
     Auth: AuthStack,
-    APP: APP_STACK
+    // APP: APP_STACK
   }, 
   {
-    initialRouteName: 'APP'
+    initialRouteName: 'Main'
   })
 );
