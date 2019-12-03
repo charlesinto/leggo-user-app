@@ -9,6 +9,8 @@ import * as actions from "../../actions";
 import { customStyles, styles } from '../../constants/styles';
 import DateTimePicker from "react-native-modal-datetime-picker";
 
+import firebase from "../../config/firebase";
+
 class NewShipment extends Component {
     state = {
         pickupTime: '',
@@ -72,7 +74,7 @@ class NewShipment extends Component {
                             <Image
                                 style={styles.parcelImage}
                                 resizeMode="cover" 
-                                source={require('../../assets/images/envelop.jpg')}
+                                source={require('../../assets/images/boxsmall.png')}
                              />
                         </View>
                         <View style={styles.parcelDetailName}>
@@ -103,7 +105,7 @@ class NewShipment extends Component {
                             <Image
                                 style={styles.parcelImage}
                                 resizeMode="cover"
-                                source={require('../../assets/images/big_box.jpg')}
+                                source={require('../../assets/images/boxmedium.png')}
                             />
                         </View>
                         <View style={styles.parcelDetailName}>
@@ -134,7 +136,7 @@ class NewShipment extends Component {
                             <Image
                                 style={styles.parcelImage}
                                 resizeMode="cover"
-                                source={require('../../assets/images/big_box.jpg')}
+                                source={require('../../assets/images/boxbig.png')}
                             />
                         </View>
                         <View style={styles.parcelDetailName}>
@@ -194,12 +196,27 @@ class NewShipment extends Component {
                                 justifyContent: 'flex-end'
                             }}
                         >
-                            <Text style={styles.pickupTimeStyle}>Set pickup time</Text>
-                            <FontAwesome
-                                name="angle-right"
-                                size={26}
-                                style={{ marginBottom: -3, color: Colors.iconColor }}
-                            />
+                                <View style={{ flexDirection: 'row' }}>
+                                    <View style={{ marginRight: 6, marginTop: 4 }}>
+                                        <Ionicons
+                                            name={
+                                                Platform.OS === 'ios'
+                                                    ? `ios-time`
+                                                    : 'md-time'
+                                            }
+
+                                            size={16}
+                                            style={{ color: Colors.iconColor }}
+                                        />
+                                    </View>
+                                    <Text style={styles.pickupTimeStyle}>Set pickup time</Text>
+                                    <FontAwesome
+                                        name="angle-right"
+                                        size={26}
+                                        style={{ marginBottom: -3, color: Colors.iconColor }}
+                                    />
+                                </View>
+                            
                         </View>
                         </TouchableNativeFeedback>
                     </View>
@@ -207,7 +224,22 @@ class NewShipment extends Component {
         }
         return (
             <View style={{ marginTop: 6,}}>
-                <Text style={{...styles.timeStyle}}>{this.state.pickupTimeToLocale.trim()}</Text>
+                <View style={{ flexDirection: 'row' }}>
+                        <View style={{ marginRight: 6, marginTop: 4 }}>
+                            <Ionicons
+                                name={
+                                    Platform.OS === 'ios'
+                                        ? `ios-calendar`
+                                        : 'md-calendar'
+                                }
+
+                                size={16}
+                                style={{ color: Colors.iconColor }}
+                            />
+                        </View>
+                        <Text style={{...styles.timeStyle}}>{this.state.pickupTimeToLocale.trim()}</Text>
+                    </View>
+
                 <TouchableNativeFeedback  onPress={this.selectDateTime}  >
                 <View 
                     style={{
@@ -217,12 +249,27 @@ class NewShipment extends Component {
                         width: '100%'
                     }}
                 >
-                    <Text style={styles.pickupTimeStyle}>Set pickup time</Text>
-                    <FontAwesome
-                        name="angle-right"
-                        size={26}
-                        style={{ marginBottom: -3, color: Colors.iconColor }}
-                    />
+
+                    <View style={{ flexDirection: 'row' }}>
+                        <View style={{ marginRight: 6, marginTop: 4 }}>
+                            <Ionicons
+                                name={
+                                    Platform.OS === 'ios'
+                                        ? `ios-time`
+                                        : 'md-time'
+                                }
+
+                                size={16}
+                                style={{ color: Colors.iconColor }}
+                            />
+                        </View>
+                        <Text style={styles.pickupTimeStyle}>Change pickup time</Text>
+                        <FontAwesome
+                            name="angle-right"
+                            size={26}
+                            style={{ marginBottom: -3, color: Colors.iconColor }}
+                        />
+                    </View>
                 </View>
                 </TouchableNativeFeedback>
             </View>
@@ -256,12 +303,12 @@ class NewShipment extends Component {
     }
     renderView = () => {
         const { shipmentDetail: {sender, receiver, pickup, parcelType, destination, selectedItems} } = this.props;
-        
+        console.log(pickup, destination)
         return (
             <KeyboardAvoidingView behavior="padding" enabled style={{ display: 'flex', flex: 1 }}>
                 <SafeAreaView style={{ display: 'flex', flex: 1 }}>
                     <ScrollView style={{ display: 'flex', flex: 1 }}>
-                        <View style={styles.AppContainer}>
+                        <View style={{...styles.AppContainer, ...styles.addMargin}}>
                             <View style={{ display: 'flex', width: '100%' }}>
                                 <View style={{ display: 'flex', flex: 0.1 }}>
 
@@ -274,7 +321,7 @@ class NewShipment extends Component {
                                             style={{...styles.addressInputStyle, ...styles.customAddressBarInput}}
                                             placeholder="Pickup Location"
                                             selectionColor={Colors.primaryCOlor}
-                                            value={pickup}
+                                            value={pickup ? pickup.description : ''}
                                             disabled
                                             />
                                         
@@ -285,7 +332,7 @@ class NewShipment extends Component {
                                                 style={{...styles.addressInputStyle, ...styles.customAddressBarInput}}
                                                 selectionColor={Colors.primaryCOlor}
                                                 placeholder="Destination"
-                                                value={destination}
+                                                value={destination ? destination.description : ''}
                                                 disabled
                                             />
                                     </Item>
@@ -293,50 +340,104 @@ class NewShipment extends Component {
                             </View>
                             <Text style={styles.senderStyle}>SENDER</Text>
                             <Card style={styles.cardContainerStyle}>
-                                    
-                                        <Text style={{ ...styles.textLineStyle, ...styles.senderName, }}>{sender.fullName}</Text>
-                                    
-                                    
-                                        <Text style={{ ...styles.textLineStyle }}>{sender.email}</Text>
-                                    
-                                    <View bordered>
-                                        <Text style={{ ...styles.textLineStyle }}>{sender.phoneNumber}</Text>
-                                    </View>
-                                
-                                    <View>
-                                        {this.setPickUpTime()}
-                                    </View>
-                                    <View style={{ ...styles.iconContainerStyle }}>
+                                <View style={{ flexDirection: 'row' }}>
+                                    <View style={{ marginRight: 6, marginTop: 4 }}>
                                         <Ionicons
                                             name={
                                                 Platform.OS === 'ios'
-                                                    ? `ios-create`
-                                                    : 'md-create'
+                                                    ? `ios-person`
+                                                    : 'md-person'
                                             }
 
-                                            size={26}
-                                            style={{ marginBottom: -3, color: Colors.iconColor }}
+                                            size={16}
+                                            style={{ color: Colors.iconColor }}
                                         />
                                     </View>
-                                </Card>
+                                    <Text style={{ ...styles.textLineStyle, ...styles.senderName, }}>{sender.fullName}</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row' }}>
+                                    <View style={{ marginRight: 6, marginTop: 4 }}>
+                                        <Ionicons
+                                            name={
+                                                Platform.OS === 'ios'
+                                                    ? `ios-mail`
+                                                    : 'md-mail'
+                                            }
+
+                                            size={16}
+                                            style={{ color: Colors.iconColor }}
+                                        />
+                                    </View>
+                                    <Text style={{ ...styles.textLineStyle }}>{sender.email}</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row' }}>
+                                    <View style={{ marginRight: 6, marginTop: 4 }}>
+                                        <Ionicons
+                                            name={
+                                                Platform.OS === 'ios'
+                                                    ? `ios-call`
+                                                    : 'md-call'
+                                            }
+
+                                            size={16}
+                                            style={{ color: Colors.iconColor }}
+                                        />
+                                    </View>
+                                    <Text style={{ ...styles.textLineStyle }}>{sender.phoneNumber}</Text>
+                                </View>
+                                <View>
+                                    {this.setPickUpTime()}
+                                </View>
+                            </Card>
+                            
                                 <Text style={styles.senderStyle}>RECEIVER</Text>
                                 <Card style={styles.cardContainerStyle}>
-                                    <Text style={{ ...styles.textLineStyle, ...styles.senderName, }}>{receiver.fullName}</Text>
-                                    <Text style={{ ...styles.textLineStyle }}>{receiver.email}</Text>
-                                    <Text style={{ ...styles.textLineStyle }}>{receiver.phoneNumber}</Text>
-                                    <View style={{ ...styles.iconContainerStyle }}>
+                                <View style={{ flexDirection: 'row' }}>
+                                    <View style={{ marginRight: 6, marginTop: 4 }}>
                                         <Ionicons
                                             name={
                                                 Platform.OS === 'ios'
-                                                    ? `ios-create`
-                                                    : 'md-create'
+                                                    ? `ios-person`
+                                                    : 'md-person'
                                             }
 
-                                            size={26}
-                                            style={{ marginBottom: -3, color: Colors.iconColor }}
+                                            size={16}
+                                            style={{ color: Colors.iconColor }}
                                         />
                                     </View>
-                                    </Card>
+                                    <Text style={{ ...styles.textLineStyle, ...styles.senderName, }}>{receiver.fullName}</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row' }}>
+                                    <View style={{ marginRight: 6, marginTop: 4 }}>
+                                        <Ionicons
+                                            name={
+                                                Platform.OS === 'ios'
+                                                    ? `ios-mail`
+                                                    : 'md-mail'
+                                            }
+
+                                            size={16}
+                                            style={{ color: Colors.iconColor }}
+                                        />
+                                    </View>
+                                    <Text style={{ ...styles.textLineStyle }}>{receiver.email}</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row' }}>
+                                    <View style={{ marginRight: 6, marginTop: 4 }}>
+                                        <Ionicons
+                                            name={
+                                                Platform.OS === 'ios'
+                                                    ? `ios-call`
+                                                    : 'md-call'
+                                            }
+
+                                            size={16}
+                                            style={{ color: Colors.iconColor }}
+                                        />
+                                    </View>
+                                    <Text style={{ ...styles.textLineStyle }}>{receiver.phoneNumber}</Text>
+                                </View>
+                            </Card>
                                 <Text style={styles.senderStyle}>ITEMS</Text>
                                 <FlatList 
                                     data={selectedItems}

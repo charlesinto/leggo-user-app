@@ -11,6 +11,10 @@ import { Root } from "native-base";
 
 import AppNavigator from './navigation/AppNavigator';
 import Reducer from "./Reducer";
+// import * as firebase from "firebase";
+// import { firebaseConfig } from "./config/firebase";
+
+// firebase.initializeApp(firebaseConfig)
 
 const createStoreWithMiddleWare = applyMiddleware(ReduxThunk)(createStore)
 
@@ -18,6 +22,9 @@ export default function App(props) {
   const [isLoadingComplete, setLoadingComplete] = useState(false);
 
   if (!isLoadingComplete && !props.skipLoadingScreen) {
+    console.ignoredYellowBox = [
+        'Setting a timer'
+    ];
     return (
       <AppLoading
         startAsync={loadResourcesAsync}
@@ -26,6 +33,9 @@ export default function App(props) {
       />
     );
   } else {
+    console.ignoredYellowBox = [
+      'Setting a timer'
+    ];
     return (
       <Provider store={createStoreWithMiddleWare(Reducer)}>
         <Root>

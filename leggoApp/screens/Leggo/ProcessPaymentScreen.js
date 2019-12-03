@@ -3,9 +3,17 @@ import { View, KeyboardAvoidingView, SafeAreaView, ScrollView } from "react-nati
 import Colors from "../../constants/Colors";
 import { customStyles , styles} from "../../constants/styles";
 import { Card, Text, CardItem, Item, Label, Input, Button } from "native-base";
+import { connect } from "react-redux";
+import * as actions from "../../actions";
 import { Col, Row, Grid } from "react-native-easy-grid";
 
 class ProcessPaymentScreen extends Component {
+    constructor(props){
+        super(props)
+        console.ignoredYellowBox = [
+            'Setting a timer'
+        ];
+    }
     static navigationOptions = ({navigation}) => {
         return {
             title:"Process Payment",
@@ -16,16 +24,24 @@ class ProcessPaymentScreen extends Component {
             headerTitleStyle: customStyles.headerStyle
         }
     }
+    
     formatAsMoney = (amount = 0) => {
        return amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
     }
-    
+    handleFormSubmit = () => {
+        const {pickupTimeToLocale, pickupTime, selectedItems, shipmentDetail} = this.props
+       this.props.procesShipment({
+            shipmentDetail,selectedItems,
+            pickupTime, pickupTimeToLocale
+       })
+       //parcelType, destination, selectedItems
+    }
     render() {
         return (
             <KeyboardAvoidingView behavior="padding" enabled style={{ display: 'flex', flex: 1 }}>
                 <SafeAreaView style={{ display: 'flex', flex: 1 }}>
                     <ScrollView style={{ display: 'flex', flex: 1 }}>
-                        <View style={styles.AppContainer}>
+                        <View style={{...styles.AppContainer, ...styles.addMargin}}>
                             <Card style={styles.summaryCard}>
                                 <CardItem>
                                     <View style={styles.costContainerStyle}>
@@ -67,7 +83,7 @@ class ProcessPaymentScreen extends Component {
                                     </View>
                                 </CardItem>
                             </Card>
-                            <Card style={styles.cardInputsContainer}>
+                            {/* <Card style={styles.cardInputsContainer}>
                                 <Grid>
                                     <Col>
                                         <CardItem style={styles.checkoutCardInputContainer}>
@@ -138,8 +154,8 @@ class ProcessPaymentScreen extends Component {
                                 </Grid>
                                 
                                 
-                            </Card>
-                            <Button full style={{backgroundColor: Colors.secondaryColor}}>
+                            </Card> */}
+                            <Button onPress={this.handleFormSubmit} full style={{backgroundColor: Colors.secondaryColor, marginTop: 40}}>
                                 <Text>
                                     Pay Now
                                 </Text>
@@ -152,4 +168,14 @@ class ProcessPaymentScreen extends Component {
     }
 }
 
-export default ProcessPaymentScreen;
+const mapStateToProps = state => {
+    const {order: {shipmentDetail, selectedItems, pickupTime, pickupTimeToLocale}} = state;
+    return {
+        shipmentDetail,
+        selectedItems,
+        pickupTime, pickupTimeToLocale
+    }
+
+}
+
+export default connect(mapStateToProps, actions)(ProcessPaymentScreen);

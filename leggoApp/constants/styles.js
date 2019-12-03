@@ -10,12 +10,16 @@ export const customStyles = {
 }
 
 export const styles = StyleSheet.create({
+    addMargin: {
+        marginLeft: 16,
+        marginRight: 16,
+    },
     AppContainer: {
         display: 'flex',
         flex: 1,
         flexDirection: 'column',
-        marginLeft: 16,
-        marginRight: 16,
+        // marginLeft: 16,
+        // marginRight: 16,
         paddingTop: 16,
         paddingBottom: 16,
         // backgroundColor: '#cdcdcd'
@@ -79,7 +83,7 @@ export const styles = StyleSheet.create({
     },
     parcelImageContainer: {
         width:'100%', 
-        height: 120,
+        height: 100,
         borderWidth: 2,
         borderRadius: 4,
         borderColor: '#F6F6F6'
@@ -317,3 +321,34 @@ export const styles = StyleSheet.create({
         fontSize: 12
     }
 })
+
+
+/*
+<Card style={styles.cardContainerStyle}>
+                                    
+                                        <Text style={{ ...styles.textLineStyle, ...styles.senderName, }}>{sender.fullName}</Text>
+                                    
+                                    
+                                        <Text style={{ ...styles.textLineStyle }}>{sender.email}</Text>
+                                    
+                                    <View bordered>
+                                        <Text style={{ ...styles.textLineStyle }}>{sender.phoneNumber}</Text>
+                                    </View>
+                                
+                                   
+                                    <View style={{ ...styles.iconContainerStyle }}>
+                                        <Ionicons
+                                            name={
+                                                Platform.OS === 'ios'
+                                                    ? `ios-create`
+                                                    : 'md-create'
+                                            }
+
+                                            size={26}
+                                            style={{ marginBottom: -3, color: Colors.iconColor }}
+                                        />
+                                    </View>
+                                </Card>
+
+
+*/

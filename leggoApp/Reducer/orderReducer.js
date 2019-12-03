@@ -1,5 +1,6 @@
 import { SELECT_DELIVERY_ITEM, NEW_SHIPMENT, UPDATE_PARCEL_PACKAGE_COUNT, 
-    CONFIRM_SHIPMENT } from "../actions/type"
+    CONFIRM_SHIPMENT, 
+    REMOVE_SELECTED_ITEM} from "../actions/type"
 
 const INITIAL_STATE = {
     items: [
@@ -28,6 +29,14 @@ export default (state=INITIAL_STATE, actions) => {
         case CONFIRM_SHIPMENT: 
             const {pickupTimeToLocale, pickupTime} = actions.payload
             return {...state, pickupTime, pickupTimeToLocale}
+        case REMOVE_SELECTED_ITEM:
+            const id = actions.payload;
+            const index = state.selectedItems.findIndex(element => element.id === id)
+            const copySelectedItems = state.selectedItems;
+            if(index !== -1){
+                copySelectedItems.splice(index, 1)
+            }
+            return {...state, selectedItems: [...copySelectedItems]}
         default:
             return {...state}
     }

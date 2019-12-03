@@ -34,7 +34,7 @@ class OrderScreen extends Component {
         return (
             <SafeAreaView style={{display:'flex', flex: 1}}>
                 <View style={{display:'flex', flex: 1}}>
-                    <View style={{...styles.AppContainer, paddingTop: 40}}>
+                    <View style={{...styles.AppContainer, ...styles.addMargin, paddingTop: 40}}>
                         <View>
                             <Text style={styles.orderScreenName}>Hi Charles,</Text>
                             <Text style={styles.orderScreenShortTitle}>Orders are ready to track</Text>

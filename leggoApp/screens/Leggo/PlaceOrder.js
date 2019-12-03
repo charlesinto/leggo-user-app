@@ -3,30 +3,67 @@ import { View, SafeAreaView, KeyboardAvoidingView,ScrollView,
      Platform,FlatList, TouchableWithoutFeedback, Image } from "react-native";
 import { Card, Item,CardItem, Input,Text, Label, Form, Button, CheckBox, Toast } from "native-base";
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
+import { GooglePlacesAutocomplete  } from "react-native-google-places-autocomplete";
 import { connect } from "react-redux";
 import Colors from "../../constants/Colors";
+import { GOOGLE_API_KEY } from "../../keys/googleAPI";
 import { customStyles, styles } from "../../constants/styles";
 import * as actions from "../../actions";
+import * as Location from 'expo-location';
+import * as Permissions from 'expo-permissions';
+import {db} from '../../firebase'
+// import { db, dbh } from "../../firebase";
+import layout from "../../constants/Layout";
 
 class PlaceOrder extends Component {
-    state = {
-        extraPackaging: false,
-        sameAsSender: false,
-        parcelType: [],
-        pickup: '',
-        destination: '',
-        sender: {
-            fullName: 'charles onuorah',
-            phoneNumber: '07010671710',
-            email: 'charles.onuorah@yahoo.com',
-        },
-        receiver: {
-            fullName: '',
-            email:'',
-            phoneNumber: ''
-        },
-        isFormValid: false
+    constructor(props){
+        super(props)
+
+        this.googleRef = React.createRef()
+        this.googleRef2 = React.createRef()
+        this.state = {
+            extraPackaging: false,
+            sameAsSender: false,
+            parcelType: [],
+            pickup: '',
+            destination: '',
+            destination: '',
+            sender: {
+                fullName: 'charles onuorah',
+                phoneNumber: '07010671710',
+                email: 'charles.onuorah@yahoo.com',
+            },
+            receiver: {
+                fullName: '',
+                email:'',
+                phoneNumber: ''
+            },
+            listView1: false,
+            listView2: false,
+            isFormValid: false,
+            currentLocation: null,
+            errorLocation: null,
+            errorMessage: null,
+            showDeleteIcon1: false,
+            showDeleteIcon2: false
+        }
     }
+    componentDidMount(){
+        this._getLocationAsync()
+    }
+    _getLocationAsync = async () => {
+        let { status } = await Permissions.askAsync(Permissions.LOCATION);
+        if (status !== 'granted') {
+          this.setState({
+            errorMessage: 'Permission to access location was denied',
+            errorLocation: true
+          });
+        }
+    
+        const location = await Location.getCurrentPositionAsync({});
+        const { coords: {latitude, longitude}} = location;
+        this.setState({ currentLocation: { latitude, longitude } });
+      };
     static navigationOptions = ({ navigation }) => {
         return {
           title: 'Place Order',
@@ -45,11 +82,30 @@ class PlaceOrder extends Component {
       addItems = () => {
           this.props.navigation.navigate('AddItem')
       }
+      _removeItem = id => {
+          this.props.removeSelectedItem(id)
+      }
       renderItem = ({item}) => {
-        const {itemName} = item;
+        const {itemName, id} = item;
         return ( <CardItem  bordered>
-                        <View style={{display:'flex', width:'100%', flexDirection:'row', justifyContent:'space-between'}}>
-                            <Text style={styles.selectedItemsStyle}>{itemName}</Text>
+                        <View style={{ width:'100%',fontFamily:'Lato', flexDirection:'row', justifyContent:'space-between'}}>
+                            <View style={{flexDirection:'row',width:"100%", justifyContent:'space-between'}}>
+                                <Text style={styles.selectedItemsStyle}>{itemName}</Text>
+                                <TouchableWithoutFeedback onPress={() => this._removeItem(id)}>
+                                    <View style={{ marginTop: 2}}>
+                                        <Ionicons
+                                            name={
+                                                Platform.OS === 'ios'
+                                                    ? `ios-remove-circle-outline`
+                                                    : 'md-remove-circle-outline'
+                                            }
+
+                                            size={24}
+                                            style={{ color: Colors.iconColor }}
+                                        />
+                                    </View>
+                                </TouchableWithoutFeedback>
+                            </View>
                         </View>
                     </CardItem>)
     }
@@ -111,6 +167,12 @@ class PlaceOrder extends Component {
             isValid = false
             return {isValid, message: 'Please select delivery item(s)'}
         }
+        else if(this.state.pickup === ''){
+            return { isValid: false, message:'Please select pickup location'}
+        }
+        else if(this.state.destination === ''){
+            return {isValid: false, message: 'Please enter delivery destination'}
+        }
         if(this.state.parcelType.length > 0){
             console.log('in')
             isValid = true
@@ -120,6 +182,7 @@ class PlaceOrder extends Component {
             isValid = false
             return {isValid, message: 'Please select parcel size'}
         }
+        
         
         
     }
@@ -207,6 +270,58 @@ class PlaceOrder extends Component {
         this.props.newShipment({...this.state, selectedItems: this.props.selectedItems})
         this.props.navigation.navigate('NewShipment')
     }
+    _onTextChange = (text, target) => {
+        if(text.trim() === ''){
+           return this.setState({
+                [target]:'',
+                showDeleteIcon1: false,
+                showDeleteIcon2: false
+            })
+        }
+        if(target === 'pickup'){
+            
+            return this.toggleDeleteIcon(text, 'showDeleteIcon1')
+        }
+        return this.toggleDeleteIcon(text, 'showDeleteIcon2')
+    }
+    handleAddressDelte = searchBox => {
+        switch(searchBox){
+            case 'listView1':
+                return this.setState({
+                    listView1: false
+                })
+            case 'listView2':
+                return this.setState({
+                    listView2: false
+                })
+            default:
+                return ;
+        }
+    }
+    toggleDeleteIcon = (text, target) => {
+        switch(target){
+            case 'showDeleteIcon1':
+                if(text.trim() === ''){
+                    return this.setState({
+                        showDeleteIcon1: false
+                    })
+                }
+                return this.setState({
+                    showDeleteIcon1: true
+                })
+            case 'showDeleteIcon2':
+                    if(text.trim() === ''){
+                        return this.setState({
+                            showDeleteIcon2: false
+                        })
+                    }
+                    return this.setState({
+                        showDeleteIcon2: true
+                    })
+            default:
+                return ;
+        }
+    }
     render() {
         return (
             <KeyboardAvoidingView behavior="padding" enabled style={{ display: 'flex', flex: 1 }}>
@@ -218,39 +333,259 @@ class PlaceOrder extends Component {
                                 
                                 </View>
                                 <View style={{display:'flex', flex: 0.9}}>
-                                    <Item regular>
-                                        <FontAwesome name="map-marker" size={26}
-                                            style={{paddingLeft: 8}}
+                                    
+                                    <GooglePlacesAutocomplete
+                                        placeholder="Enter Pickup Location"
+                                        minLength={2}
+                                        autoFocus={false}
+                                        returnKeyType={'search'} 
+                                        fetchDetails={true}
+                                        textInputProps={{
+                                            onChangeText: (text) => {
+                                                console.log(text) 
+                                                this._onTextChange(text, 'pickup')
+                                             }
+                                        }}
+                                        listViewDisplayed={this.state.listView1}
+                                        renderDescription={row => row.description} // custom description render
+                                        onPress={(data, details = null) => {
+                                            console.log('pickup', data)
+                                            this.setState({
+                                                listView1: false,
+                                                pickup: data
+                                            })
+                                        }}
+                                        renderLeftButton={()  => <FontAwesome name="map-marker" size={26}
+                                        style={{paddingLeft: 8, marginTop: 6, color: Colors.warning}}
+                                        />}
+                                        renderRightButton={()  => true ? <TouchableWithoutFeedback onPress={() => {
+                                            this.googleRef2._handleChangeText('')
+                                            this.setState({
+                                                pickup: ''
+                                            })
+                                            this.handleAddressDelte('listView1')
+                                        }}>
+                                            <Ionicons name="ios-close" size={18}
+                                        style={{paddingLeft: 8, marginTop: 14, paddingRight: 8}}
+                                        /></TouchableWithoutFeedback> : null}
+                                        getDefaultValue={() => {
+                                            return '';
+                                        }}
+                                        query={{
+                                            key: GOOGLE_API_KEY,
+                                            language: 'en',
+                                            types: '(cities)',
+                                        }}
+                                        styles={{
+                                            description: {
+                                            fontWeight: 'bold',
+                                            },
+                                            predefinedPlacesDescription: {
+                                            color: '#1faadb',
+                                            },
+                                            textInputContainer:{
+                                                borderColor: '#d3d3d3',
+                                                borderWidth: 1,
+                                                backgroundColor: '#fff',
+                                                borderBottomWidth:0,
+                                                borderRadius:4,
+                                                height: 40,
+                                                marginLeft: 16,
+                                                marginRight: 16
+                                            },
+                                            listView: {
+                                                backgroundColor: 'white',
+                                                borderRadius: 5,
+                                                flex: 1,
+                                                elevation: 3,
+                                                zIndex: 10,
+                                                position:'absolute',
+                                                top: 80,
+                                                height: layout['window'].height,
+
+                                                left:0,
+                                                marginBottom: 20
+                                            },
+                                        }}
+                                        currentLocation={false}
+                                        currentLocationLabel="Current location"
+                                        nearbyPlacesAPI="GooglePlacesSearch"
+                                        GoogleReverseGeocodingQuery={{
+                                            // available options for GoogleReverseGeocoding API : https://developers.google.com/maps/documentation/geocoding/intro
+                                        }}
+                                        GooglePlacesSearchQuery={{
+                                            // available options for GooglePlacesSearch API : https://developers.google.com/places/web-service/search
+                                            rankby: 'distance',
+                                            types: 'food',
+                                        }}
+                                        filterReverseGeocodingByTypes={[
+                                            'locality',
+                                            'administrative_area_level_3',
+                                        ]}
+                                        ref= {comp => this.googleRef2 = comp}
+                                        predefinedPlaces={[ {
+                                            description: 'Current Location',
+                                            geometry:this.state.currentLocation ? {
+                                                location: {
+                                                    lat: this.state.currentLocation.latitude,
+                                                     lng: this.state.currentLocation.longitude
+                                                }
+
+                                            } : { location: {lat: -1, lng: -1} }
+                                        }, homePlace, workPlace]}
+                                        debounce={200}
                                         />
-                                        <Input
-                                            placeholder="Pickup Location"
-                                            selectionColor={Colors.primaryCOlor}
-                                            value={this.state.pickup}
-                                            style={styles.addressInputStyle}
-                                            onChangeText={(text) => this.handleOnChange('', 'pickup', text)}
+                                    <GooglePlacesAutocomplete
+                                        placeholder="Enter Destination"
+                                        
+                                        minLength={2} 
+                                        autoFocus={false}
+                                        returnKeyType={'done'} 
+                                        listViewDisplayed={this.state.listView2} 
+                                        fetchDetails={false}
+                                        textInputProps={{
+                                            ref: input => this.textInput1 = input,
+                                            onChangeText: (text) => {
+                                                console.log(text) 
+                                                this._onTextChange(text, 'destination')
+                                             }
+                                        }}
+                                        renderDescription={row => row.description}
+                                        onPress={(data, details = null) => {
+                                            console.log('destination', data);
+                                            this.setState({
+                                                listView2: false,
+                                                destination: data
+                                            })
+                                        }}
+                                        ref={(comp) => this.googleRef = comp}
+                                        renderLeftButton={()  => <FontAwesome name="map-marker" size={26}
+                                        style={{paddingLeft: 8, marginTop: 6, color: Colors.danger}}
+                                        />}
+                                        renderRightButton={()  =>   <TouchableWithoutFeedback onPress={() => {
+                                            this.textInput1.clear()
+                                            this.setState({
+                                                destination: ''
+                                            })
+                                            this.handleAddressDelte('listView2')
+                                        }}>
+                                            <Ionicons name="ios-close" size={18}
+                                        style={{paddingLeft: 8, marginTop: 14, paddingRight: 8}}
+                                        /></TouchableWithoutFeedback> }
+                                        getDefaultValue={() => {
+                                            return ''; 
+                                        }}
+                                        query={{
+                                            
+                                            key: GOOGLE_API_KEY, //'AIzaSyAGF8cAOPFPIKCZYqxuibF9xx5XD4JBb84',
+                                            language: 'en',
+                                            types: '(cities)', // default: 'geocode'
+                                        }}
+                                        styles={{
+                                            description: {
+                                            fontWeight: 'bold',
+                                            },
+                                            predefinedPlacesDescription: {
+                                            color: '#1faadb',
+                                            },
+                                            textInput:{
+                                                borderColor: '#fff'
+                                            },
+                                            textInputContainer:{
+                                                borderColor: '#d3d3d3',
+                                                borderWidth: 1,
+                                                backgroundColor: '#fff',
+                                                borderRadius:4,
+                                                position:'relative',
+                                                zIndex: 10,
+                                                height: 40,
+                                                marginRight: 16,
+                                                marginLeft: 16
+                                            },
+                                            listView: {
+                                                backgroundColor: 'white',
+                                                borderRadius: 5,
+                                                flex: 1,
+                                                elevation: 3,
+                                                zIndex: 10,
+                                                height: layout['window'].height
+                                            }
+                                        
+                                        }}
+                                        currentLocation={false} 
+                                        currentLocationLabel="Current location"
+                                        GooglePlacesSearchQuery={{
+                                            rankby: 'distance',
+                                        }}
+                                        filterReverseGeocodingByTypes={[
+                                            'locality',
+                                            'administrative_area_level_3',
+                                        ]} 
+                                        predefinedPlaces={[{
+                                            description: 'Current Location',
+                                            geometry:this.state.currentLocation ? {
+                                                location: {
+                                                    lat: this.state.currentLocation.latitude,
+                                                     lng: this.state.currentLocation.longitude
+                                                }
+
+                                            } : { location: {lat: -1, lng: -1} }
+                                        }, homePlace, workPlace]}
+                                        debounce={200}
                                         />
-                                    </Item>
-                                    <Item regular>
-                                        <FontAwesome name="map-marker" size={26} 
-                                            style={{paddingLeft: 8}}
-                                        />
-                                        <Input 
-                                            selectionColor={Colors.primaryCOlor}
-                                            placeholder="Destination"
-                                            value={this.state.destination}
-                                            style={styles.addressInputStyle}
-                                            onChangeText={(text) => this.handleOnChange('', 'destination', text)}
-                                        />
-                                    </Item>
                                 </View>
                             </View>
+                            <View style={styles.addMargin}>
                             <Text style={styles.senderStyle}>SENDER</Text>
                             
                             <View>
                                 <Card style={styles.cardContainerStyle}>
-                                    <Text style={{ ...styles.textLineStyle, ...styles.senderName, }}>{this.state.sender.fullName}</Text>
-                                    <Text style={{ ...styles.textLineStyle }}>{this.state.sender.email}</Text>
-                                    <Text style={{ ...styles.textLineStyle }}>{this.state.sender.phoneNumber}</Text>
+                                <View style={{flexDirection:'row'}}>
+                                        <View style={{marginRight: 6, marginTop: 4}}>
+                                            <Ionicons
+                                                name={
+                                                    Platform.OS === 'ios'
+                                                        ? `ios-person`
+                                                        : 'md-person'
+                                                }
+
+                                                size={16}
+                                                style={{ color: Colors.iconColor }}
+                                            />
+                                        </View>
+                                        <Text style={{ ...styles.textLineStyle, ...styles.senderName, }}>{this.state.sender.fullName}</Text>
+                                    </View>
+                                    <View style={{flexDirection:'row'}}>
+                                        <View style={{marginRight: 6, marginTop: 4}}>
+                                            <Ionicons
+                                                name={
+                                                    Platform.OS === 'ios'
+                                                        ? `ios-mail`
+                                                        : 'md-mail'
+                                                }
+
+                                                size={16}
+                                                style={{ color: Colors.iconColor }}
+                                            />
+                                        </View>
+                                        <Text style={{ ...styles.textLineStyle }}>{this.state.sender.email}</Text>
+                                    </View>
+                                    <View style={{flexDirection:'row'}}>
+                                        <View style={{marginRight: 6, marginTop: 4}}>
+                                            <Ionicons
+                                                name={
+                                                    Platform.OS === 'ios'
+                                                        ? `ios-call`
+                                                        : 'md-call'
+                                                }
+
+                                                size={16}
+                                                style={{ color: Colors.iconColor }}
+                                            />
+                                        </View>
+                                        <Text style={{ ...styles.textLineStyle }}>{this.state.sender.phoneNumber}</Text>
+                                    </View>
+                                    
                                     <View style={{ ...styles.iconContainerStyle }}>
                                         <Ionicons
                                             name={
@@ -278,9 +613,51 @@ class PlaceOrder extends Component {
                                 (
                                     <View>
                                         <Card style={styles.cardContainerStyle}>
-                                            <Text style={{ ...styles.textLineStyle, ...styles.senderName, }}>{this.state.sender.fullName}</Text>
-                                            <Text style={{ ...styles.textLineStyle }}>{this.state.sender.email}</Text>
-                                            <Text style={{ ...styles.textLineStyle }}>{this.state.sender.phoneNumber}</Text>
+                                            <View style={{flexDirection:'row'}}>
+                                                    <View style={{marginRight: 6, marginTop: 4}}>
+                                                        <Ionicons
+                                                            name={
+                                                                Platform.OS === 'ios'
+                                                                    ? `ios-person`
+                                                                    : 'md-person'
+                                                            }
+
+                                                            size={16}
+                                                            style={{ color: Colors.iconColor }}
+                                                        />
+                                                    </View>
+                                                    <Text style={{ ...styles.textLineStyle, ...styles.senderName, }}>{this.state.sender.fullName}</Text>
+                                                </View>
+                                                <View style={{flexDirection:'row'}}>
+                                                    <View style={{marginRight: 6, marginTop: 4}}>
+                                                        <Ionicons
+                                                            name={
+                                                                Platform.OS === 'ios'
+                                                                    ? `ios-mail`
+                                                                    : 'md-mail'
+                                                            }
+
+                                                            size={16}
+                                                            style={{ color: Colors.iconColor }}
+                                                        />
+                                                    </View>
+                                                    <Text style={{ ...styles.textLineStyle }}>{this.state.sender.email}</Text>
+                                                </View>
+                                                <View style={{flexDirection:'row'}}>
+                                                    <View style={{marginRight: 6, marginTop: 4}}>
+                                                        <Ionicons
+                                                            name={
+                                                                Platform.OS === 'ios'
+                                                                    ? `ios-call`
+                                                                    : 'md-call'
+                                                            }
+
+                                                            size={16}
+                                                            style={{ color: Colors.iconColor }}
+                                                        />
+                                                    </View>
+                                                    <Text style={{ ...styles.textLineStyle }}>{this.state.sender.phoneNumber}</Text>
+                                                </View>
                                         </Card>
 
                                     </View>
@@ -322,7 +699,21 @@ class PlaceOrder extends Component {
                                     <CardItem header  button bordered>
                                             <TouchableWithoutFeedback onPress={this.addItems} style={{display:'flex', width: '100%'}}>
                                                 <View style={styles.itemHeaderStyle}>
-                                                    <Text style={{ color: '#696969',}}>Add item types</Text>
+                                                    <View style={{flexDirection:"row"}}>
+                                                        <View style={{marginRight: 6, marginTop: 2}}>
+                                                            <Ionicons
+                                                                name={
+                                                                    Platform.OS === 'ios'
+                                                                        ? `ios-add`
+                                                                        : 'md-add'
+                                                                }
+
+                                                                size={20}
+                                                                style={{ color: Colors.iconColor }}
+                                                            />
+                                                        </View>
+                                                        <Text style={{ color: '#696969',fontFamily: 'Lato', fontSize: 14}}>Add item types</Text>
+                                                    </View>
                                                     <FontAwesome
                                                         name="angle-right"
             
@@ -371,13 +762,13 @@ class PlaceOrder extends Component {
                                     }}
                                     
                                 >
-                                    <TouchableWithoutFeedback onPress={() => this.selectParcelSize('Envelope', '../../assets/images/envelop.jpg')}>
+                                    <TouchableWithoutFeedback onPress={() => this.selectParcelSize('Envelope', '../../assets/images/boxsmall.png')}>
                                         <View style={styles.parcelCardContainer} >
                                             <View 
                                                 ref={component => this._envelop = component} 
                                                 style={styles.parcelImageContainer}>
                                                 <Image
-                                                    source={require('../../assets/images/envelop.jpg')}
+                                                    source={require('../../assets/images/boxsmall.png')}
                                                     style={styles.parcelImage}
                                                     resizeMode="cover"
                                                 />
@@ -390,14 +781,14 @@ class PlaceOrder extends Component {
                                         </View>
                                     </TouchableWithoutFeedback>
                                     <TouchableWithoutFeedback
-                                         onPress={() => this.selectParcelSize('Medium Box', '../../assets/images/big_box.jpg')}
+                                         onPress={() => this.selectParcelSize('Medium Box', '../../assets/images/boxmedium.png')}
                                     >
                                     <View style={styles.parcelCardContainer} >
                                         <View 
                                             ref={component => this._mediumBox = component}
                                             style={styles.parcelImageContainer}>
                                             <Image
-                                                source={require('../../assets/images/big_box.jpg')}
+                                                source={require('../../assets/images/boxmedium.png')}
                                                 style={styles.parcelImage}
                                                 resizeMode="cover"
                                             />
@@ -410,7 +801,7 @@ class PlaceOrder extends Component {
                                     </View>
                                     </TouchableWithoutFeedback>
                                     <TouchableWithoutFeedback
-                                         onPress={() => this.selectParcelSize('Big Box', '../../assets/images/big_box.jpg')}
+                                         onPress={() => this.selectParcelSize('Big Box', '../../assets/images/boxbig.png')}
                                     >
 
                                     <View style={{...styles.parcelCardContainer,paddingRight:20}} >
@@ -418,7 +809,7 @@ class PlaceOrder extends Component {
                                             ref={component => this._bigBox = component}
                                             style={styles.parcelImageContainer}>
                                             <Image
-                                                source={require('../../assets/images/big_box.jpg')}
+                                                source={require('../../assets/images/boxbig.png')}
                                                 style={styles.parcelImage}
                                                 resizeMode="cover"
                                             />
@@ -435,7 +826,7 @@ class PlaceOrder extends Component {
                                 </Card>
                             </View>
                         </View>
-                        
+                        </View>
                     </ScrollView>
                     <View style={styles.CABcontainer}>
                         <Button  onPress={this.handleSubmit} full style={ styles.continueButtonStyle}>
@@ -447,6 +838,20 @@ class PlaceOrder extends Component {
             </KeyboardAvoidingView>
         );
     }
+}
+
+const homePlace = {
+    description: 'Home',
+    geometry: { location: { lat: 48.8152937, lng: 2.4597668 } },
+  };
+  const workPlace = {
+    description: 'Work',
+    geometry: { location: { lat: 48.8496818, lng: 2.2940881 } },
+  };
+
+const currentLocation = {
+    description: 'Current Location',
+    geometry: { location: this.sta}
 }
 
 
