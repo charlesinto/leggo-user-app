@@ -3,7 +3,7 @@ import * as firebase from "firebase";
 // import serviceAccount from "../keys/serviceAccount.json";
 import "firebase/firestore";
 import { apiKey, authDomain, databaseURL, projectId, storageBucket,
-messagingSenderId, measurementId, appId } from "../config/firebase";
+messagingSenderId, measurementId, appId } from "../config";
 
 const config = {
     apiKey,
@@ -20,7 +20,6 @@ const config = {
 //     credential: admin.credential.cert(serviceAccount)
 // })
 
-console.log(firebase.apps)
 
 if(!firebase.apps.length){
     firebase.initializeApp(config)

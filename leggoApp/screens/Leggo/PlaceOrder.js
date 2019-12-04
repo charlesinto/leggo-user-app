@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { View, SafeAreaView, KeyboardAvoidingView,ScrollView, 
-     Platform,FlatList, TouchableWithoutFeedback, Image } from "react-native";
+     Platform,FlatList, TouchableWithoutFeedback,Modal, Image, ActivityIndicator } from "react-native";
 import { Card, Item,CardItem, Input,Text, Label, Form, Button, CheckBox, Toast } from "native-base";
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import { GooglePlacesAutocomplete  } from "react-native-google-places-autocomplete";
@@ -11,8 +11,6 @@ import { customStyles, styles } from "../../constants/styles";
 import * as actions from "../../actions";
 import * as Location from 'expo-location';
 import * as Permissions from 'expo-permissions';
-import {db} from '../../firebase'
-// import { db, dbh } from "../../firebase";
 import layout from "../../constants/Layout";
 
 class PlaceOrder extends Component {
@@ -24,8 +22,11 @@ class PlaceOrder extends Component {
         this.state = {
             extraPackaging: false,
             sameAsSender: false,
+            showLoader: false,
             parcelType: [],
             pickup: '',
+            pickupText: '',
+            destinationText: '',
             destination: '',
             destination: '',
             sender: {
@@ -50,6 +51,18 @@ class PlaceOrder extends Component {
     }
     componentDidMount(){
         this._getLocationAsync()
+    }
+    _toggleModalClose = () => {
+        this.setState({
+            showLoader: false
+        })
+    }
+    static getDerivedStateFromProps(nextProps, state){
+        if(nextProps.target !== ''){
+            return {...state, [nextProps.target]: nextProps.value}
+
+        }
+        return null
     }
     _getLocationAsync = async () => {
         let { status } = await Permissions.askAsync(Permissions.LOCATION);
@@ -271,18 +284,95 @@ class PlaceOrder extends Component {
         this.props.navigation.navigate('NewShipment')
     }
     _onTextChange = (text, target) => {
-        if(text.trim() === ''){
-           return this.setState({
-                [target]:'',
-                showDeleteIcon1: false,
-                showDeleteIcon2: false
-            })
-        }
-        if(target === 'pickup'){
+        // console.log('text>>>', text, 'target>>>>', target)
+        // this.setState({
+        //     [target]: text
+        // })
+    }
+    _getCoordinateFromAddress = (input, description = null, place_id = null) => {
+        this.setState({showLoader: true})
+        if(input === 'listView1'){
+            if(this.state.pickupText.trim() !== ''){
+                console.log(description, place_id)
+                console.log('in here')
+                if(description && place_id){
+                   return  fetch(`https://maps.googleapis.com/maps/api/place/details/json?place_id=${place_id}&key=${GOOGLE_API_KEY}`)
+                        .then(res => res.json())
+                        .then(place => {
+                            console.log('places', place)
+                            const {result: {formatted_address, geometry}} = place;
+                            this.setState({
+                                pickup: {
+                                    description: formatted_address,
+                                    geometry
+                                },
+                                showLoader: false
+                            }, () => console.log('pickup', this.state.pickup))
+                        })
+                        .catch(err => console.log('error', err))
+                }
+                const address = this.state.pickupText.split(' ').join('+')
+                return fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${address}&key=${GOOGLE_API_KEY}`)
+                        .then(res => res.json())
+                        .then(place => {
+                            console.log('places', place)
+                            const {result: {formatted_address, geometry}} = place;
+                            this.setState({
+                                pickup: {
+                                    description: formatted_address,
+                                    geometry
+                                },
+                                showLoader: false
+                            }, () => console.log('pickup', this.state.pickup))
+                        })
+                        .catch(err => console.log('error', err))
+            }
             
-            return this.toggleDeleteIcon(text, 'showDeleteIcon1')
         }
-        return this.toggleDeleteIcon(text, 'showDeleteIcon2')
+
+       else if(input === 'listView2'){
+
+            if(this.state.destinationText.trim() !== ''){
+                console.log(description, place_id)
+                console.log('in here')
+                if(description && place_id){
+                   return  fetch(`https://maps.googleapis.com/maps/api/place/details/json?place_id=${place_id}&key=${GOOGLE_API_KEY}`)
+                        .then(res => res.json())
+                        .then(place => {
+                            console.log('places', place)
+                            const {result: {formatted_address, geometry}} = place;
+                            this.setState({
+                                pickup: {
+                                    description: formatted_address,
+                                    geometry
+                                },
+                                showLoader: false
+                            }, () => console.log('pickup', this.state.pickup))
+                        })
+                        .catch(err => console.log('error', err))
+                }
+                const address = this.state.destinationText.split(' ').join('+')
+                return fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${address}&key=${GOOGLE_API_KEY}`)
+                        .then(res => res.json())
+                        .then(place => {
+                            console.log('places', place)
+                            const {result: {formatted_address, geometry}} = place;
+                            this.setState({
+                                pickup: {
+                                    description: formatted_address,
+                                    geometry
+                                },
+                                showLoader: false
+                            }, () => console.log('pickup', this.state.pickup))
+                        })
+                        .catch(err => console.log('error', err))
+            }
+            
+        }
+
+    }
+    _fetchLocationDetails = (input, value) => {
+        console.log('called to search')
     }
     handleAddressDelte = searchBox => {
         switch(searchBox){
@@ -341,15 +431,21 @@ class PlaceOrder extends Component {
                                         returnKeyType={'search'} 
                                         fetchDetails={true}
                                         textInputProps={{
+                                            onFocus: () => this.setState({listView1: true}),
                                             onChangeText: (text) => {
                                                 console.log(text) 
-                                                this._onTextChange(text, 'pickup')
-                                             }
+                                                this.props.inputChange(text, 'pickupText')
+                                                // this._onTextChange(text, 'pickupText')
+                                             },
+                                             ref: comp => this.textInput2 = comp,
+                                             onBlur:  () => this._getCoordinateFromAddress('listView1') 
                                         }}
                                         listViewDisplayed={this.state.listView1}
                                         renderDescription={row => row.description} // custom description render
                                         onPress={(data, details = null) => {
                                             console.log('pickup', data)
+                                            const { description, place_id} = data
+                                            this._getCoordinateFromAddress('listView1', description, place_id)
                                             this.setState({
                                                 listView1: false,
                                                 pickup: data
@@ -359,10 +455,8 @@ class PlaceOrder extends Component {
                                         style={{paddingLeft: 8, marginTop: 6, color: Colors.warning}}
                                         />}
                                         renderRightButton={()  => true ? <TouchableWithoutFeedback onPress={() => {
-                                            this.googleRef2._handleChangeText('')
-                                            this.setState({
-                                                pickup: ''
-                                            })
+                                            this._getCoordinateFromAddress('listView1')
+                                            console.log('input 1 value', this.textInput2.value)
                                             this.handleAddressDelte('listView1')
                                         }}>
                                             <Ionicons name="ios-close" size={18}
@@ -447,12 +541,16 @@ class PlaceOrder extends Component {
                                             ref: input => this.textInput1 = input,
                                             onChangeText: (text) => {
                                                 console.log(text) 
-                                                this._onTextChange(text, 'destination')
-                                             }
+                                                this.props.inputChange(text, 'destinationText')
+                                             },
+                                             onFocus: () => this.setState({listView2: true}),
+                                             onBlur:() => this._getCoordinateFromAddress('listView2') 
+
                                         }}
                                         renderDescription={row => row.description}
                                         onPress={(data, details = null) => {
                                             console.log('destination', data);
+                                            this._getCoordinateFromAddress('listView2', data)
                                             this.setState({
                                                 listView2: false,
                                                 destination: data
@@ -463,10 +561,7 @@ class PlaceOrder extends Component {
                                         style={{paddingLeft: 8, marginTop: 6, color: Colors.danger}}
                                         />}
                                         renderRightButton={()  =>   <TouchableWithoutFeedback onPress={() => {
-                                            this.textInput1.clear()
-                                            this.setState({
-                                                destination: ''
-                                            })
+                                            this._getCoordinateFromAddress('listView2')
                                             this.handleAddressDelte('listView2')
                                         }}>
                                             <Ionicons name="ios-close" size={18}
@@ -821,18 +916,29 @@ class PlaceOrder extends Component {
                                         
                                     </View>
                                     </TouchableWithoutFeedback>
+                                    
                                 </ScrollView>
 
                                 </Card>
                             </View>
                         </View>
                         </View>
+                        <Modal
+                            transparent={true}
+                            visible={this.state.showLoader}
+                            onRequestClose={() => this._toggleModalClose()}
+                        >
+                        <View style={{flexDirection: "row", justifyContent:"space-around", padding:10, flex: 1}}>
+                            <ActivityIndicator size="large" color={Colors.primaryCOlor}/>
+                        </View>
+                        </Modal>
                     </ScrollView>
                     <View style={styles.CABcontainer}>
                         <Button  onPress={this.handleSubmit} full style={ styles.continueButtonStyle}>
                             <Text>Continue</Text>
                         </Button>
                     </View>
+                    
                 </SafeAreaView>
 
             </KeyboardAvoidingView>
@@ -849,16 +955,18 @@ const homePlace = {
     geometry: { location: { lat: 48.8496818, lng: 2.2940881 } },
   };
 
-const currentLocation = {
-    description: 'Current Location',
-    geometry: { location: this.sta}
-}
+// const currentLocation = {
+//     description: 'Current Location',
+//     geometry: { location: this.sta}
+// }
 
 
 const mapStateToProps = state => {
-    const {order: {selectedItems}} = state;
+    const {order: {selectedItems, value, target}} = state;
     return {
-        selectedItems
+        selectedItems,
+        value,
+        target
     }
 }
 

@@ -1,5 +1,5 @@
 import { SELECT_DELIVERY_ITEM, NEW_SHIPMENT,
-     UPDATE_PARCEL_PACKAGE_COUNT, CONFIRM_SHIPMENT, REMOVE_SELECTED_ITEM } from "./type"
+     UPDATE_PARCEL_PACKAGE_COUNT, CONFIRM_SHIPMENT,ADDRESS_INPUT_CHANGE, REMOVE_SELECTED_ITEM } from "./type"
 import { db } from "../firebase";
 
 export const selectDeliveryPackage = (itemId) => {
@@ -67,4 +67,8 @@ export const procesShipment = order => {
         })
     }
     
+}
+
+export const inputChange = (text, target) => {
+    return {type: ADDRESS_INPUT_CHANGE, payload: {text, target}}
 }

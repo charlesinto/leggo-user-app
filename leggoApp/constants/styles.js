@@ -319,36 +319,43 @@ export const styles = StyleSheet.create({
         fontFamily: 'Montserrat',
         fontWeight: '600',
         fontSize: 12
+    },
+    homeScreenContainerStyle:{
+        display:'flex', 
+        height:'100%', 
+        flexDirection:'column',
+         width:'100%'
+    },
+    homeScreenBackgroundContainer:{
+        flex: 0.7,
+        width: '100%',
+        height: '100%'
+    },
+    homeScreenBackgroundImage:{
+        flex: 1,
+        width: undefined,
+        height: undefined,
+        position:"relative"
+    },
+    homeScreenGreeting: {
+        position:'absolute',
+        bottom: 30,
+        right: 0,
+        width: '100%',
+        flexDirection:'row',
+        justifyContent:'center',
+        alignItems: 'center'
+    },
+    homeGreetingText:{
+        color: '#fff',
+        fontFamily:'Lato',
+        fontSize: 26
+    },
+    homeScreenIconContainer:{
+        width: '100%', 
+        height: '100%', 
+        justifyContent:'center', 
+        alignItems:"center"
     }
 })
 
-
-/*
-<Card style={styles.cardContainerStyle}>
-                                    
-                                        <Text style={{ ...styles.textLineStyle, ...styles.senderName, }}>{sender.fullName}</Text>
-                                    
-                                    
-                                        <Text style={{ ...styles.textLineStyle }}>{sender.email}</Text>
-                                    
-                                    <View bordered>
-                                        <Text style={{ ...styles.textLineStyle }}>{sender.phoneNumber}</Text>
-                                    </View>
-                                
-                                   
-                                    <View style={{ ...styles.iconContainerStyle }}>
-                                        <Ionicons
-                                            name={
-                                                Platform.OS === 'ios'
-                                                    ? `ios-create`
-                                                    : 'md-create'
-                                            }
-
-                                            size={26}
-                                            style={{ marginBottom: -3, color: Colors.iconColor }}
-                                        />
-                                    </View>
-                                </Card>
-
-
-*/

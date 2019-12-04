@@ -1,10 +1,11 @@
 import React from 'react';
 import { Platform } from 'react-native';
 import { createStackNavigator, createBottomTabNavigator } from 'react-navigation';
-import {  FontAwesome } from '@expo/vector-icons';
+import {  FontAwesome, Ionicons } from '@expo/vector-icons';
 import TabBarIcon from '../components/TabBarIcon';
 import LinksScreen from '../screens/LinksScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import HomeScreen from "../screens/Leggo/HomeScreen";
 import PlaceOrder from "../screens/Leggo/PlaceOrder";
 import Colors from '../constants/Colors';
 import AddItemScreen from '../screens/Leggo/AddItemScreen';
@@ -40,6 +41,8 @@ HomeStack.navigationOptions = {
     />
   ),
 };
+
+
 
 HomeStack.path = '';
 
@@ -86,8 +89,12 @@ config,
   initialRouteName: 'PlaceOrder'
 })
 
+const LandingStack = createStackNavigator({
+  LandingScreen: HomeScreen
+}, config,{initialRouteName: 'LandingScreen'})
+
 PlaceOrderSTack.navigationOptions = {
-  tabBarLabel: 'New Order',
+  tabBarLabel: 'Ship Now',
   tabBarIcon: ({ focused }) => (
     <FontAwesome
       focused={focused}
@@ -103,8 +110,23 @@ PlaceOrderSTack.navigationOptions = {
   ),
 };
 
+LandingStack.navigationOptions = {
+  tabBarLabel: 'Home',
+  tabBarIcon: ({ focused }) => (
+    <Ionicons
+      focused={focused}
+      name={'ios-planet'}
+      size={26}
+      style={{ marginBottom: -3 }}
+      color={focused ? Colors.tabIconSelected : Colors.tabIconDefault}
+    />
+  ),
+}
+
+
 PlaceOrderSTack.path = '';
 
+LandingStack.path = '';
 
 const OrderStack = createStackNavigator({
   OrderScreeen: OrderScreen,
@@ -134,6 +156,7 @@ OrderStack.navigationOptions = {
 OrderStack.path = '';
 
 const tabNavigator = createBottomTabNavigator({
+  LandingScreen: {screen: LandingStack},
   HomeStack: {
     screen: PlaceOrderSTack
   },
@@ -141,7 +164,7 @@ const tabNavigator = createBottomTabNavigator({
   LinksStack,
   SettingsStack,
 }, {
-  initialRouteName: 'HomeStack'
+  initialRouteName: 'LandingScreen'
 });
 
 tabNavigator.path = '';

@@ -1,6 +1,7 @@
 import { SELECT_DELIVERY_ITEM, NEW_SHIPMENT, UPDATE_PARCEL_PACKAGE_COUNT, 
     CONFIRM_SHIPMENT, 
-    REMOVE_SELECTED_ITEM} from "../actions/type"
+    REMOVE_SELECTED_ITEM,
+    ADDRESS_INPUT_CHANGE} from "../actions/type"
 
 const INITIAL_STATE = {
     items: [
@@ -15,7 +16,9 @@ const INITIAL_STATE = {
     selectedItems: [],
     shipmentDetail: null,
     pickupTime: null,
-    pickupTimeToLocale: null
+    pickupTimeToLocale: null,
+    target: '',
+    value: ''
 }
 export default (state=INITIAL_STATE, actions) => {
     switch(actions.type){
@@ -37,6 +40,8 @@ export default (state=INITIAL_STATE, actions) => {
                 copySelectedItems.splice(index, 1)
             }
             return {...state, selectedItems: [...copySelectedItems]}
+        case ADDRESS_INPUT_CHANGE:
+            return {...state, target: actions.payload.target, value: actions.payload.text}
         default:
             return {...state}
     }

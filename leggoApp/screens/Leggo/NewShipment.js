@@ -9,7 +9,7 @@ import * as actions from "../../actions";
 import { customStyles, styles } from '../../constants/styles';
 import DateTimePicker from "react-native-modal-datetime-picker";
 
-import firebase from "../../config/firebase";
+import firebase from "../../config";
 
 class NewShipment extends Component {
     state = {
