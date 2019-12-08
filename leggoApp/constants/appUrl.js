@@ -1,0 +1,1 @@
+export const baseUrl = 'https://us-central1-leggo-38877.cloudfunctions.net/api/v1/'

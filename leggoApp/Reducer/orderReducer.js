@@ -1,7 +1,11 @@
 import { SELECT_DELIVERY_ITEM, NEW_SHIPMENT, UPDATE_PARCEL_PACKAGE_COUNT, 
     CONFIRM_SHIPMENT, 
     REMOVE_SELECTED_ITEM,
-    ADDRESS_INPUT_CHANGE} from "../actions/type"
+    ADDRESS_INPUT_CHANGE,
+    FETCH_PRICE,
+    ORDER_CREATED_SUCCESSFULLY,
+    SET_FILTER_CATEGORY,
+    VIEW_MAP} from "../actions/type"
 
 const INITIAL_STATE = {
     items: [
@@ -18,7 +22,15 @@ const INITIAL_STATE = {
     pickupTime: null,
     pickupTimeToLocale: null,
     target: '',
-    value: ''
+    value: '',
+    deliveryFee: 0,
+    deliveryInstruction: '',
+    pickupInstruction: '',
+    extraPackaging: 0,
+    confirmationCode: null,
+    orderCreated: null,
+    activeLink: null,
+    orderId:''
 }
 export default (state=INITIAL_STATE, actions) => {
     switch(actions.type){
@@ -30,8 +42,8 @@ export default (state=INITIAL_STATE, actions) => {
         case UPDATE_PARCEL_PACKAGE_COUNT: 
             return updateParcels(state, actions.payload)
         case CONFIRM_SHIPMENT: 
-            const {pickupTimeToLocale, pickupTime} = actions.payload
-            return {...state, pickupTime, pickupTimeToLocale}
+            const {pickupTimeToLocale,deliveryInstruction, pickupInstruction, pickupTime} = actions.payload
+            return {...state, pickupTime, pickupTimeToLocale, deliveryInstruction, pickupInstruction}
         case REMOVE_SELECTED_ITEM:
             const id = actions.payload;
             const index = state.selectedItems.findIndex(element => element.id === id)
@@ -42,6 +54,14 @@ export default (state=INITIAL_STATE, actions) => {
             return {...state, selectedItems: [...copySelectedItems]}
         case ADDRESS_INPUT_CHANGE:
             return {...state, target: actions.payload.target, value: actions.payload.text}
+        case FETCH_PRICE:
+            return {...state, deliveryFee: actions.payload.price, extraPackaging: actions.payload.extraPackaging}
+        case ORDER_CREATED_SUCCESSFULLY: 
+            return {...state, orderCreated: true, confirmationCode: actions.payload}
+        case SET_FILTER_CATEGORY:
+            return {...state, activeLink: actions.payload}
+        case VIEW_MAP:
+            return {...state, orderId: actions.payload}
         default:
             return {...state}
     }

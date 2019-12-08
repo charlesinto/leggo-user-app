@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { View, Platform, FlatList, ScrollView, TouchableNativeFeedback } from "react-native";
-import { Text, Card, CardItem, Right, } from "native-base";
+import { Text, Card, CardItem, Right, Button, Icon } from "native-base";
 import { connect } from "react-redux";
 import { customStyles } from "../../constants/styles";
 import { Ionicons } from '@expo/vector-icons';
@@ -62,6 +62,9 @@ class AddItemScreen extends Component {
                     </CardItem>
                 </TouchableNativeFeedback>)
     }
+    _goBack = () => {
+        this.props.navigation.goBack()
+    }
     render() {
         return (
             <ScrollView style={{display: "flex"}}>
@@ -77,6 +80,13 @@ class AddItemScreen extends Component {
                         extraData={this.props.selectedItems.length}
                     />
                 </Card>
+                <View style={{width:'100%', justifyContent:'center', alignItems:'center', marginTop:30}}>
+                    <Button iconLeft success onPress={this._goBack}>
+                        <Icon name="checkmark" />
+                        <Text>Done</Text>
+                    </Button>
+                </View>
+                
             </ScrollView>
         );
     }

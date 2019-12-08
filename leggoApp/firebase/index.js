@@ -1,3 +1,4 @@
+console.disableYellowBox = true
 import * as firebase from "firebase";
 // import admin from "firebase-admin";
 // import serviceAccount from "../keys/serviceAccount.json";
@@ -29,5 +30,6 @@ if(!firebase.apps.length){
 const db = firebase.firestore()
 
 export {
-   db
+   db,
+   firebase
 }

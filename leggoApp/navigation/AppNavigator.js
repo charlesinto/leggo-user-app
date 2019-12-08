@@ -1,10 +1,14 @@
-import React from 'react';
+import React, { Component} from 'react';
+import { SafeAreaView, Modal,View, ActivityIndicator } from "react-native";
+import { connect } from "react-redux";
+import * as actions from "../actions";
 import { createAppContainer, createSwitchNavigator, createStackNavigator } from 'react-navigation';
 
 import MainTabNavigator from './MainTabNavigator';
 import HomeScreen from "../screens/Leggo/HomeScreen";
-import Login from "../screens/Auth/Login";
-import Signup from "../screens/Auth/Signup";
+import Login from "../screens/Leggo/LoginScreen";
+import Signup from "../screens/Leggo/SignupScreen";
+import Colors from '../constants/Colors';
 // import PlaceOrderScreen from "../screens/Leggo/PlaceOrder";
 // import AddItemScreen from "../screens/Leggo/AddItemScreen";
 // import NewShipment from "../screens/Leggo/NewShipment";
@@ -36,7 +40,7 @@ const HomeStack = createStackNavigator({
 //   initialRouteName: 'Tabs'
 // }, )
 
-export default createAppContainer(
+const AppNavigation = createAppContainer(
   createSwitchNavigator({
     // You could add another route here for authentication.
     // Read more at https://reactnavigation.org/docs/en/auth-flow.html
@@ -46,6 +50,36 @@ export default createAppContainer(
     // APP: APP_STACK
   }, 
   {
-    initialRouteName: 'Main'
+    initialRouteName: 'Auth'
   })
 );
+
+class App extends Component{
+  render(){
+    return (
+      <SafeAreaView style={{flex: 1, width: '100%'}}>
+        <AppNavigation />
+          <Modal
+            transparent={true}
+            animationType={'none'}
+            visible={this.props.loading}
+            onRequestClose={() => {console.log('close modal')}}>
+            <View style={{flex: 1, width: '100%', height: '100%', alignItems:"center", justifyContent:"center"}}>
+              <View>
+                <ActivityIndicator size="large" 
+                color={this.props.color ? this.props.color : Colors.secondaryColor}
+                animating={this.props.loading} />
+              </View>
+            </View>
+          </Modal>
+      </SafeAreaView>
+    )
+  }
+}
+
+const mapStateToProps = state => {
+  const {home: {loading, color}} = state
+  return {loading, color}
+}
+
+export default connect(mapStateToProps, actions)(App);

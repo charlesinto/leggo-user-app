@@ -2,17 +2,43 @@ import React, { Component } from 'react';
 import { View, KeyboardAvoidingView, SafeAreaView, ScrollView } from "react-native";
 import Colors from "../../constants/Colors";
 import { customStyles , styles} from "../../constants/styles";
-import { Card, Text, CardItem, Item, Label, Input, Button } from "native-base";
+import { Card, Text, CardItem, CheckBox,Toast, Item, Label, Input, Button } from "native-base";
 import { connect } from "react-redux";
 import * as actions from "../../actions";
 import { Col, Row, Grid } from "react-native-easy-grid";
 
 class ProcessPaymentScreen extends Component {
+
     constructor(props){
         super(props)
         console.ignoredYellowBox = [
             'Setting a timer'
         ];
+        this.state = {
+            paymentType: '',
+            paymentParty: '',
+        }
+    }
+    componentDidMount(){
+        this.props.initiateLoading()
+    }
+    static getDerivedStateFromProps(nextProps, state){
+        if(nextProps.shipmentDetail.destination && nextProps.shipmentDetail.pickup){
+            if(nextProps.orderCreated){
+                nextProps.hideSpinner()
+                nextProps.navigation.navigate('ResponsePage')
+                return {...state}
+            }
+            nextProps.calculatePrice({
+                destination: nextProps.shipmentDetail.destination,
+                pickup: nextProps.shipmentDetail.destination,
+                parcelType: nextProps.shipmentDetail.parcelType,
+                itemsToShip: nextProps.shipmentDetail.selectedItems
+            })
+
+            return {...state, ...nextProps.shipmentDetail}
+        }
+        return null
     }
     static navigationOptions = ({navigation}) => {
         return {
@@ -29,12 +55,35 @@ class ProcessPaymentScreen extends Component {
        return amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
     }
     handleFormSubmit = () => {
-        const {pickupTimeToLocale, pickupTime, selectedItems, shipmentDetail} = this.props
+        const {pickupTimeToLocale, pickupTime, selectedItems,deliveryInstruction,
+            pickupInstruction, shipmentDetail, deliveryFee} = this.props
+        if(this.state.paymentType.trim() === ''){
+            return Toast.show({
+                text: 'Please Select Payment Type',
+                type: "error",
+                position: "bottom"
+            })
+        }
+        this.props.showSpinner()
        this.props.procesShipment({
             shipmentDetail,selectedItems,
-            pickupTime, pickupTimeToLocale
+            pickupTime, pickupTimeToLocale,
+            paymentType: this.state.paymentType,
+            paymentParty: this.state.paymentParty,
+            pickupInstruction,deliveryInstruction, deliveryFee
        })
-       //parcelType, destination, selectedItems
+    }
+    handlePaymentTypeOnChange = value => {
+        const paymentParty = value === 'pay on pickup' ? 'sender' : 'receiver';
+        this.setState({
+            paymentType: value,
+            paymentParty
+        })
+    }
+    handlePaymentPartyOnChange = value => {
+        this.setState({
+            paymentParty: value
+        })
     }
     render() {
         return (
@@ -51,7 +100,7 @@ class ProcessPaymentScreen extends Component {
                                                 {"\u20A6"}
                                             </Text>
                                             <Text style={{...styles.moneyStyle, }}>
-                                                {this.formatAsMoney(12343)}
+                                                {this.formatAsMoney(this.props.deliveryFee)}
                                             </Text>
                                         </View>
                                     </View>
@@ -64,7 +113,7 @@ class ProcessPaymentScreen extends Component {
                                                 {"\u20A6"}
                                             </Text>
                                             <Text style={{...styles.moneyStyle, }}>
-                                                {this.formatAsMoney(0)}
+                                                {this.formatAsMoney(this.props.extraPackaging)}
                                             </Text>
                                         </View>
                                     </View>
@@ -77,12 +126,78 @@ class ProcessPaymentScreen extends Component {
                                                 {"\u20A6"}
                                             </Text>
                                             <Text style={{...styles.moneyStyle, }}>
-                                                {this.formatAsMoney(12343)}
+                                                {this.formatAsMoney(this.props.deliveryFee + this.props.extraPackaging)}
                                             </Text>
                                         </View>
                                     </View>
                                 </CardItem>
                             </Card>
+                            <Card style={{...styles.summaryCard, marginTop: 20}}>
+                                <CardItem bordered>
+                                    <View style={styles.costContainerStyle}>
+                                        <Text style={{...styles.textLineStyle, color:'#000'}}>Select Payment Type</Text>
+                                    </View>
+                                </CardItem>
+                                <CardItem>
+                                    <View style={{...styles.moneyConatinerStyle}}>
+                                        <View style={{flex: 1, flexDirection:'row'}}>
+                                            <View>
+                                                <CheckBox checked={this.state.paymentType === 'pay on pickup'} 
+                                                onPress={ () => this.handlePaymentTypeOnChange('pay on pickup')} color={Colors.iconColor} style={{}} />
+                                            </View>
+                                            <View style={{marginLeft: 8}}>
+                                                <Text style={{fontFamily:'Lato',color:'#000', marginLeft: 8, fontSize: 12}}>
+                                                Pay On Pickup</Text>
+                                            </View>
+                                            
+                                        </View>
+                                        <View style={{flex:1 ,flexDirection:'row'}}>
+                                            <View>
+                                                <CheckBox checked={this.state.paymentType === 'pay on delivery'} 
+                                                onPress={() => this.handlePaymentTypeOnChange('pay on delivery')} color={Colors.iconColor} style={{}} />
+                                            </View>
+                                            <View style={{marginLeft: 8}}>
+                                                <Text style={{fontFamily:'Lato',color:'#000', marginLeft: 8, fontSize: 12}}>
+                                                Pay On Delivery</Text>
+                                            </View>
+                                            
+                                        </View>
+                                    </View>
+                                </CardItem>
+                            </Card>
+                            {/* <Card style={{...styles.summaryCard, marginTop: 20}}>
+                                <CardItem bordered>
+                                    <View style={styles.costContainerStyle}>
+                                        <Text style={{...styles.textLineStyle, color:'#000'}}>Select Payment Party</Text>
+                                    </View>
+                                </CardItem>
+                                <CardItem>
+                                    <View style={{...styles.moneyConatinerStyle}}>
+                                        <View style={{flex: 1, flexDirection:'row'}}>
+                                            <View>
+                                                <CheckBox checked={this.state.paymentParty === 'sender'} 
+                                                onPress={ () => this.handlePaymentPartyOnChange('sender')} color={Colors.iconColor} style={{}} />
+                                            </View>
+                                            <View style={{marginLeft: 8}}>
+                                                <Text style={{fontFamily:'Lato',color:'#000', marginLeft: 8, fontSize: 12}}>
+                                                Sender</Text>
+                                            </View>
+                                            
+                                        </View>
+                                        <View style={{flex:1 ,flexDirection:'row'}}>
+                                            <View>
+                                                <CheckBox checked={this.state.paymentParty === 'receiver'} 
+                                                onPress={() => this.handlePaymentPartyOnChange('receiver')} color={Colors.iconColor} style={{}} />
+                                            </View>
+                                            <View style={{marginLeft: 8}}>
+                                                <Text style={{fontFamily:'Lato',color:'#000', marginLeft: 8, fontSize: 12}}>
+                                                Receiver</Text>
+                                            </View>
+                                            
+                                        </View>
+                                    </View>
+                                </CardItem>
+                            </Card> */}
                             {/* <Card style={styles.cardInputsContainer}>
                                 <Grid>
                                     <Col>
@@ -157,7 +272,7 @@ class ProcessPaymentScreen extends Component {
                             </Card> */}
                             <Button onPress={this.handleFormSubmit} full style={{backgroundColor: Colors.secondaryColor, marginTop: 40}}>
                                 <Text>
-                                    Pay Now
+                                    Book Order
                                 </Text>
                             </Button>
                         </View>
@@ -169,11 +284,14 @@ class ProcessPaymentScreen extends Component {
 }
 
 const mapStateToProps = state => {
-    const {order: {shipmentDetail, selectedItems, pickupTime, pickupTimeToLocale}} = state;
+    const {order: {shipmentDetail, selectedItems, pickupTime,extraPackaging, deliveryFee,
+         pickupTimeToLocale, deliveryInstruction, pickupInstruction, orderCreated}} = state;
     return {
         shipmentDetail,
         selectedItems,
-        pickupTime, pickupTimeToLocale
+        pickupTime, pickupTimeToLocale, deliveryFee, extraPackaging,
+        deliveryInstruction, pickupInstruction,
+        orderCreated
     }
 
 }

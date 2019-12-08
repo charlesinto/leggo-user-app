@@ -11,7 +11,9 @@ import Colors from '../constants/Colors';
 import AddItemScreen from '../screens/Leggo/AddItemScreen';
 import NewShipment from '../screens/Leggo/NewShipment';
 import ProcessPaymentScreen from "../screens/Leggo/ProcessPaymentScreen";
+import MapScreen from "../screens/Leggo/MapScreen";
 import OrderScreen from "../screens/Leggo/OrderScreen";
+import ResponseScreen from "../screens/Leggo/ResponseScreen";
 
 const config = Platform.select({
   web: { headerMode: 'screen' },
@@ -82,7 +84,8 @@ const PlaceOrderSTack = createStackNavigator({
   PlaceOrder: PlaceOrder,
   AddItem: AddItemScreen,
   NewShipment: NewShipment,
-  ProcessPayment: ProcessPaymentScreen
+  ProcessPayment: ProcessPaymentScreen,
+  ResponsePage: ResponseScreen
 }, 
 config,
 {
@@ -130,6 +133,7 @@ LandingStack.path = '';
 
 const OrderStack = createStackNavigator({
   OrderScreeen: OrderScreen,
+  MapScreen: MapScreen
 }, 
 config,
 {
@@ -161,8 +165,6 @@ const tabNavigator = createBottomTabNavigator({
     screen: PlaceOrderSTack
   },
   OrderStack,
-  LinksStack,
-  SettingsStack,
 }, {
   initialRouteName: 'LandingScreen'
 });

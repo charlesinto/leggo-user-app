@@ -29,7 +29,7 @@ class OrderCard extends Component {
                         </Text>
                     </View>
                     {
-                        this.props.status === 'on way' ? (
+                        this.props.status === 0 ? (
                             <View >
                                 <Text style={{...styles.addressDetailText, fontWeight: '600'}}>Right Now</Text>
                                 <Text style={{...styles.addressDetailText, color: Colors.success}}>
@@ -49,7 +49,7 @@ class OrderCard extends Component {
                     </View>
                 </View>
                 {
-                    this.props.status !== 'pending' ? (
+                    this.props.status !== 0 ? (
                         <View style={{borderColor: '#d3d3d3',padding: 10,
                          borderWidth: 1, }}>
                             <View>
@@ -83,23 +83,39 @@ class OrderCard extends Component {
         //0213052389
         let backgroundColor= null;
         switch(this.props.status){
-            case 'on way':
+            case 1:
+            case 2:
+            case 3:
                 backgroundColor = Colors.success
             break;
-            case 'pending':
+            case 0:
                 backgroundColor = Colors.warning
             break
-            case 'fulfilled':
+            case 4:
                 backgroundColor = Colors.secondaryColor
             break;
         }
 
         return (
             <View style={{...styles.orderStatus, backgroundColor}}>
-                <Text style={styles.orderStatusText}>{this.props.status}</Text>
+                <Text style={styles.orderStatusText}>{this.renderStageToStatus()}</Text>
             </View>
             
         )
+    }
+    renderStageToStatus = () => {
+        switch(this.props.status){
+            case 0:
+                return 'Pending'
+            case 1:
+            case 2:
+            case 3:
+                return 'On Way'
+            case 4:
+                return 'Fulfilled'
+            default:
+                return ;
+        }
     }
     _renderHeader = (item, expanded) => {
         return (
@@ -126,7 +142,7 @@ class OrderCard extends Component {
     }
 
     render() {
-        const {orderNumber} = this.props
+        const {orderNumber, id} = this.props
         return (
             <View>
                 <Card>
@@ -147,19 +163,19 @@ class OrderCard extends Component {
                             paddingBottom: this.props.status === 'on way' ? 0: 10}}>
                         <FontAwesome name="map-marker" size={26}
                             style={{
-                                color: this.props.status === 'fulfilled' ? Colors.success : Colors.danger
+                                color: this.props.status === 4  ? Colors.success : Colors.danger
                             }}
                         />
                         <Text style={styles.addressText}>{this.props.destination}</Text>
                     </View>
                     {
-                        this.props.status === 'on way' ? (
+                        this.props.status >= 1 && this.props.status < 4 ? (
                         <View style={{flexDirection:'row',display:'flex', width: '100%',
                              justifyContent:'flex-end', alignItems:'center', marginBottom: 16, paddingRight: 10}}>
-                            <Button 
+                            <Button small
                                 bordered  rounded iconRight 
                                 style={{borderColor: Colors.secondaryColor, height: 40}}
-                                onPress={() => this.props._trackOrder()} >
+                                onPress={() => this.props._trackOrder(id)} >
                                 <Text style={styles.trackText}>track</Text>
                                 <Icon name="arrow-forward" size={18} />
                             </Button>

@@ -1,10 +1,33 @@
 import React, { Component } from 'react';
-import { View, ImageBackground,SafeAreaView, Text,Image, TouchableWithoutFeedback, StyleSheet } from "react-native";
+import { View, ImageBackground,SafeAreaView, Text,Image,
+  AsyncStorage, TouchableWithoutFeedback, StyleSheet } from "react-native";
 import Colors from "../../constants/Colors";
 import { customStyles, styles } from "../../constants/styles";
+import { firebase } from "../../firebase";
+import * as actions from "../../actions";
+import { connect } from "react-redux";
 import { Col, Row, Grid } from "react-native-easy-grid";
 
 class HomeScreen extends Component {
+    state = {
+      firstName: '', lastName:''
+    }
+    componentDidMount(){
+      firebase.auth().onAuthStateChanged(user => {
+        if(!user){
+          return this.props.navigation.navigate('Auth')
+        }
+      })
+      this.getCurrentUser()
+    }
+    getCurrentUser = async () => {
+        const account = await AsyncStorage.getItem('user')
+        const user = JSON.parse(account)
+        this.setState({
+          firstName: user.firstName,
+          lastName: user.lastName
+        })
+    }
     static navigationOptions = ({ navigation }) => {
         return {
           header: null,
@@ -16,8 +39,9 @@ class HomeScreen extends Component {
           headerTitleStyle: customStyles.headerStyle,
         };
       };
-      renderUser = () => {
-        return 'Charles Onuorah'
+      renderUser =  () => {
+        const {firstName, lastName} = this.state
+        return `${firstName} ${lastName}`
       }
       _handleOnPress = action => {
         switch(action){
@@ -25,10 +49,12 @@ class HomeScreen extends Component {
             this.props.navigation.navigate('HomeStack')
           break;
           case 'orders':
+            //this.props.setFilterActiveLink('all')
             this.props.navigation.navigate('OrderStack', {view: 'all'})
           break;
           case 'trackOrder':
-            this.props.navigation.navigate('OrderStack', {view:'on way'})
+             // this.props.setFilterActiveLink('on way')
+            this.props.navigation.navigate('OrderStack', {otherParam:78})
           break;
           case 'contact':
           
@@ -113,4 +139,8 @@ class HomeScreen extends Component {
     }
 }
 
-export default HomeScreen;
+const mapStateToProps = state => {
+  return {}
+}
+
+export default connect(mapStateToProps, actions)(HomeScreen);

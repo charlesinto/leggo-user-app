@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { View,KeyboardAvoidingView, SafeAreaView, ScrollView,
      Platform, FlatList, TouchableNativeFeedback, Image } from "react-native";
-import { Text, Card,CardItem,Button, Input, Item, Label, Toast } from "native-base";
+import { Text, Card,CardItem,Button, Input, Item,Form, Label, Toast } from "native-base";
 import Colors from '../../constants/Colors';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import { connect } from "react-redux";
@@ -17,6 +17,8 @@ class NewShipment extends Component {
         showDatePicker: false,
         pickupTimeToLocale: '',
         parcelCounter: 0,
+        deliveryInstruction: '',
+        pickupInstruction: ''
     }
     static navigationOptions = ({navigation}) => {
         return {
@@ -35,12 +37,13 @@ class NewShipment extends Component {
         if(this.state.pickupTimeToLocale.trim() === ''){
             Toast.show({
                 text: 'Please select pickup time',
-                type: "warning",
-                position: "top"
+                type: "error",
+                position: "bottom"
             })
             return ;
         }
-        this.props.confirmShipment(this.state.pickupTimeToLocale, this.state.pickupTime)
+        this.props.confirmShipment(this.state.pickupTimeToLocale, this.state.pickupTime,
+            this.state.deliveryInstruction, this.state.pickupInstruction)
         this.props.navigation.navigate('ProcessPayment')
     }
     handleOnChange = (parent='', target='', value='') => {
@@ -64,6 +67,11 @@ class NewShipment extends Component {
         })
         
     }
+    onChangeText = (text, target) => {
+        this.setState({
+            [target]: text
+        })
+    }
     renderParcels = ({item}) => {
         const {type, url, count, id} = item;
         if(type === "Envelope"){
@@ -74,7 +82,7 @@ class NewShipment extends Component {
                             <Image
                                 style={styles.parcelImage}
                                 resizeMode="cover" 
-                                source={require('../../assets/images/boxsmall.png')}
+                                source={require('../../assets/images/small.png')}
                              />
                         </View>
                         <View style={styles.parcelDetailName}>
@@ -105,7 +113,7 @@ class NewShipment extends Component {
                             <Image
                                 style={styles.parcelImage}
                                 resizeMode="cover"
-                                source={require('../../assets/images/boxmedium.png')}
+                                source={require('../../assets/images/medium.png')}
                             />
                         </View>
                         <View style={styles.parcelDetailName}>
@@ -136,7 +144,7 @@ class NewShipment extends Component {
                             <Image
                                 style={styles.parcelImage}
                                 resizeMode="cover"
-                                source={require('../../assets/images/boxbig.png')}
+                                source={require('../../assets/images/big.png')}
                             />
                         </View>
                         <View style={styles.parcelDetailName}>
@@ -438,6 +446,26 @@ class NewShipment extends Component {
                                     <Text style={{ ...styles.textLineStyle }}>{receiver.phoneNumber}</Text>
                                 </View>
                             </Card>
+                            <Text style={styles.senderStyle}>Delivery Instruction</Text>
+                            <View style={{width:'100%', marginBottom:10, marginTop: 10}}>
+                                <Form style={{width:'100%'}}>
+                                    <Item regular>
+                                        <Input placeholder="Any delivery instruction?" 
+                                            onChangeText={(text) => this.onChangeText(text, 'deliveryInstruction')} 
+                                            value={this.state.deliveryInstruction} />
+                                    </Item>
+                                </Form>
+                            </View>
+                            <Text style={styles.senderStyle}>Pickup Instruction</Text>
+                            <View style={{width:'100%', marginBottom:10, marginTop: 10}}>
+                                <Form style={{width:'100%'}}>
+                                    <Item regular>
+                                        <Input placeholder="Any pickup instruction?" 
+                                            onChangeText={(text) => this.onChangeText(text, 'pickupInstruction')} 
+                                            value={this.state.pickupInstruction} />
+                                    </Item>
+                                </Form>
+                            </View>
                                 <Text style={styles.senderStyle}>ITEMS</Text>
                                 <FlatList 
                                     data={selectedItems}
@@ -459,6 +487,7 @@ class NewShipment extends Component {
                                 mode="datetime"
                             />
                         </View>
+                        
                     </ScrollView>
                     <View style={styles.CABcontainer}>
                         <Button  onPress={this.handleSubmit} full style={ styles.continueButtonStyle}>

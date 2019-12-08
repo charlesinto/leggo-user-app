@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { View, SafeAreaView, KeyboardAvoidingView,ScrollView, 
-     Platform,FlatList, TouchableWithoutFeedback,Modal, Image, ActivityIndicator } from "react-native";
+     Platform,FlatList, TouchableWithoutFeedback,Modal, Image,AsyncStorage,
+      ActivityIndicator } from "react-native";
 import { Card, Item,CardItem, Input,Text, Label, Form, Button, CheckBox, Toast } from "native-base";
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import { GooglePlacesAutocomplete  } from "react-native-google-places-autocomplete";
@@ -30,9 +31,9 @@ class PlaceOrder extends Component {
             destination: '',
             destination: '',
             sender: {
-                fullName: 'charles onuorah',
-                phoneNumber: '07010671710',
-                email: 'charles.onuorah@yahoo.com',
+                fullName: '',
+                phoneNumber: '',
+                email: '',
             },
             receiver: {
                 fullName: '',
@@ -50,7 +51,22 @@ class PlaceOrder extends Component {
         }
     }
     componentDidMount(){
+        this.getCurrentUser()
         this._getLocationAsync()
+    }
+    getCurrentUser = async () => {
+        const account = await AsyncStorage.getItem('user')
+        console.log('account', account)
+        const user = JSON.parse(account)
+        const senderDetails = {
+            fullName: `${user.firstName} ${user.lastName}`,
+            email: user.email,
+            phoneNumber: user.phoneNumber
+        }
+        this.setState({
+            sender: {...senderDetails}
+
+        })
     }
     _toggleModalClose = () => {
         this.setState({
@@ -75,7 +91,17 @@ class PlaceOrder extends Component {
     
         const location = await Location.getCurrentPositionAsync({});
         const { coords: {latitude, longitude}} = location;
-        this.setState({ currentLocation: { latitude, longitude } });
+        fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_API_KEY}`)
+            .then(res => res.json())
+            .then(place => {
+                if(place.status !== 'ZERO_RESULTS'){
+                    const {results} = place
+                    const {formatted_address, geometry: {location}} = results[0]
+                    this.setState({ currentLocation: { formatted_address, location } }, () => console.log(this.state.currentLocation));
+                }
+            })
+            .catch(err => console.log('error occurred', err))
+        
       };
     static navigationOptions = ({ navigation }) => {
         return {
@@ -172,31 +198,20 @@ class PlaceOrder extends Component {
                     return {isValid, message: `Please complete receiver's details`};
                 }
         }
-        if(this.props.selectedItems.length > 0){
-            isValid = true;
-           return {isValid, message: ''};
-        }
-        else if(this.props.selectedItems.length == 0){
+        if(this.props.selectedItems.length == 0){
             isValid = false
             return {isValid, message: 'Please select delivery item(s)'}
         }
-        else if(this.state.pickup === ''){
-            return { isValid: false, message:'Please select pickup location'}
+        if(this.state.pickup === ''){
+            return { isValid: false, message:'Please provide pickup location'}
         }
-        else if(this.state.destination === ''){
-            return {isValid: false, message: 'Please enter delivery destination'}
+        if(this.state.destination === ''){
+            return {isValid: false, message: 'Please provide delivery destination'}
         }
-        if(this.state.parcelType.length > 0){
-            console.log('in')
-            isValid = true
-            return isValid
-        }else{
-            console.log('here')
-            isValid = false
-            return {isValid, message: 'Please select parcel size'}
+        if(this.state.parcelType.length === 0){
+           return {isValid:  false,message:'Please select parcel size'}
         }
-        
-        
+        return { isValid: true}
         
     }
     selectParcelSize = (type, url) => {
@@ -275,8 +290,8 @@ class PlaceOrder extends Component {
         if(!isValid){
              Toast.show({
                 text: message,
-                type: "warning",
-                position: "top"
+                type: "error",
+                position: "bottom"
             })
             return ;
         }
@@ -292,14 +307,10 @@ class PlaceOrder extends Component {
     _getCoordinateFromAddress = (input, description = null, place_id = null) => {
         this.setState({showLoader: true})
         if(input === 'listView1'){
-            if(this.state.pickupText.trim() !== ''){
-                console.log(description, place_id)
-                console.log('in here')
                 if(description && place_id){
                    return  fetch(`https://maps.googleapis.com/maps/api/place/details/json?place_id=${place_id}&key=${GOOGLE_API_KEY}`)
                         .then(res => res.json())
                         .then(place => {
-                            console.log('places', place)
                             const {result: {formatted_address, geometry}} = place;
                             this.setState({
                                 pickup: {
@@ -311,62 +322,73 @@ class PlaceOrder extends Component {
                         })
                         .catch(err => console.log('error', err))
                 }
-                const address = this.state.pickupText.split(' ').join('+')
+                const address = description && description.trim() !== '' ?
+                            description.split(' ').join('+') : this.state.pickupText.trim() !== '' ? this.state.pickupText.split(' ').join('+') : ''
                 return fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${address}&key=${GOOGLE_API_KEY}`)
                         .then(res => res.json())
                         .then(place => {
-                            console.log('places', place)
-                            const {result: {formatted_address, geometry}} = place;
-                            this.setState({
-                                pickup: {
-                                    description: formatted_address,
-                                    geometry
-                                },
+                            
+                            if(place.status !== 'ZERO_RESULTS'){
+                                const {results} = place;
+                                const { formatted_address, geometry} = results[0]
+                                return this.setState({
+                                    pickup: {
+                                        description: formatted_address,
+                                        geometry
+                                    },
+                                    showLoader: false
+                                }, () => console.log('pickup', this.state.pickup))
+                            }
+                            return this.setState({
+                                pickup:'',
                                 showLoader: false
                             }, () => console.log('pickup', this.state.pickup))
                         })
                         .catch(err => console.log('error', err))
-            }
             
         }
-
+        
        else if(input === 'listView2'){
-
-            if(this.state.destinationText.trim() !== ''){
-                console.log(description, place_id)
-                console.log('in here')
+           console.log(place_id, description)
                 if(description && place_id){
+                    console.log('destination', description, place_id)
                    return  fetch(`https://maps.googleapis.com/maps/api/place/details/json?place_id=${place_id}&key=${GOOGLE_API_KEY}`)
                         .then(res => res.json())
                         .then(place => {
-                            console.log('places', place)
                             const {result: {formatted_address, geometry}} = place;
                             this.setState({
-                                pickup: {
+                                destination: {
                                     description: formatted_address,
                                     geometry
                                 },
                                 showLoader: false
-                            }, () => console.log('pickup', this.state.pickup))
+                            }, () => console.log('destination', this.state.destination))
                         })
                         .catch(err => console.log('error', err))
                 }
-                const address = this.state.destinationText.split(' ').join('+')
+                const address = description && description.trim() !== '' ?
+                description.split(' ').join('+') : this.state.destinationText.trim() !== '' ? this.state.destinationText.split(' ').join('+') : '';
                 return fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${address}&key=${GOOGLE_API_KEY}`)
                         .then(res => res.json())
                         .then(place => {
-                            console.log('places', place)
-                            const {result: {formatted_address, geometry}} = place;
-                            this.setState({
-                                pickup: {
-                                    description: formatted_address,
-                                    geometry
-                                },
+                            if(place.status !== 'ZERO_RESULTS'){
+                                const {results} = place;
+                                const { formatted_address, geometry} = results[0]
+                              return   this.setState({
+                                    destination: {
+                                        description: formatted_address,
+                                        geometry
+                                    },
+                                    showLoader: false
+                                }, () => console.log('destination', this.state.destination))
+                            }
+                           return  this.setState({
+                                destination: '',
                                 showLoader: false
-                            }, () => console.log('pickup', this.state.pickup))
+                            }, () => console.log('destination', this.state.destination))
+                            
                         })
                         .catch(err => console.log('error', err))
-            }
             
         }
 
@@ -428,12 +450,12 @@ class PlaceOrder extends Component {
                                         placeholder="Enter Pickup Location"
                                         minLength={2}
                                         autoFocus={false}
+                                        currentLocation={false}
                                         returnKeyType={'search'} 
                                         fetchDetails={true}
                                         textInputProps={{
                                             onFocus: () => this.setState({listView1: true}),
                                             onChangeText: (text) => {
-                                                console.log(text) 
                                                 this.props.inputChange(text, 'pickupText')
                                                 // this._onTextChange(text, 'pickupText')
                                              },
@@ -448,7 +470,6 @@ class PlaceOrder extends Component {
                                             this._getCoordinateFromAddress('listView1', description, place_id)
                                             this.setState({
                                                 listView1: false,
-                                                pickup: data
                                             })
                                         }}
                                         renderLeftButton={()  => <FontAwesome name="map-marker" size={26}
@@ -501,14 +522,8 @@ class PlaceOrder extends Component {
                                                 marginBottom: 20
                                             },
                                         }}
-                                        currentLocation={false}
-                                        currentLocationLabel="Current location"
                                         nearbyPlacesAPI="GooglePlacesSearch"
-                                        GoogleReverseGeocodingQuery={{
-                                            // available options for GoogleReverseGeocoding API : https://developers.google.com/maps/documentation/geocoding/intro
-                                        }}
                                         GooglePlacesSearchQuery={{
-                                            // available options for GooglePlacesSearch API : https://developers.google.com/places/web-service/search
                                             rankby: 'distance',
                                             types: 'food',
                                         }}
@@ -517,21 +532,19 @@ class PlaceOrder extends Component {
                                             'administrative_area_level_3',
                                         ]}
                                         ref= {comp => this.googleRef2 = comp}
-                                        predefinedPlaces={[ {
-                                            description: 'Current Location',
+                                        predefinedPlaces={this.state.currentLocation ? [{
+                                            description: this.state.currentLocation ? this.state.currentLocation.formatted_address : '',
                                             geometry:this.state.currentLocation ? {
-                                                location: {
-                                                    lat: this.state.currentLocation.latitude,
-                                                     lng: this.state.currentLocation.longitude
-                                                }
+                                                location: this.state.currentLocation.location
 
                                             } : { location: {lat: -1, lng: -1} }
-                                        }, homePlace, workPlace]}
+                                        }, homePlace, workPlace] : []}
                                         debounce={200}
                                         />
                                     <GooglePlacesAutocomplete
                                         placeholder="Enter Destination"
-                                        
+                                        currentLocation={false}
+                                        currentLocationLabel="Current location"
                                         minLength={2} 
                                         autoFocus={false}
                                         returnKeyType={'done'} 
@@ -540,7 +553,7 @@ class PlaceOrder extends Component {
                                         textInputProps={{
                                             ref: input => this.textInput1 = input,
                                             onChangeText: (text) => {
-                                                console.log(text) 
+                                                console.log('destinationText >>', text) 
                                                 this.props.inputChange(text, 'destinationText')
                                              },
                                              onFocus: () => this.setState({listView2: true}),
@@ -549,11 +562,10 @@ class PlaceOrder extends Component {
                                         }}
                                         renderDescription={row => row.description}
                                         onPress={(data, details = null) => {
-                                            console.log('destination', data);
-                                            this._getCoordinateFromAddress('listView2', data)
+                                            const { description, place_id} = data
+                                            this._getCoordinateFromAddress('listView2', description, place_id)
                                             this.setState({
-                                                listView2: false,
-                                                destination: data
+                                                listView2: false
                                             })
                                         }}
                                         ref={(comp) => this.googleRef = comp}
@@ -571,10 +583,9 @@ class PlaceOrder extends Component {
                                             return ''; 
                                         }}
                                         query={{
-                                            
-                                            key: GOOGLE_API_KEY, //'AIzaSyAGF8cAOPFPIKCZYqxuibF9xx5XD4JBb84',
+                                            key: GOOGLE_API_KEY,
                                             language: 'en',
-                                            types: '(cities)', // default: 'geocode'
+                                            types: '(cities)',
                                         }}
                                         styles={{
                                             description: {
@@ -616,16 +627,13 @@ class PlaceOrder extends Component {
                                             'locality',
                                             'administrative_area_level_3',
                                         ]} 
-                                        predefinedPlaces={[{
-                                            description: 'Current Location',
+                                        predefinedPlaces={this.state.currentLocation ? [{
+                                            description: this.state.currentLocation ? this.state.currentLocation.formatted_address : '',
                                             geometry:this.state.currentLocation ? {
-                                                location: {
-                                                    lat: this.state.currentLocation.latitude,
-                                                     lng: this.state.currentLocation.longitude
-                                                }
+                                                location: this.state.currentLocation.location
 
                                             } : { location: {lat: -1, lng: -1} }
-                                        }, homePlace, workPlace]}
+                                        }, homePlace, workPlace] : []}
                                         debounce={200}
                                         />
                                 </View>
@@ -857,13 +865,13 @@ class PlaceOrder extends Component {
                                     }}
                                     
                                 >
-                                    <TouchableWithoutFeedback onPress={() => this.selectParcelSize('Envelope', '../../assets/images/boxsmall.png')}>
+                                    <TouchableWithoutFeedback onPress={() => this.selectParcelSize('Envelope', '../../assets/images/small.png')}>
                                         <View style={styles.parcelCardContainer} >
                                             <View 
                                                 ref={component => this._envelop = component} 
                                                 style={styles.parcelImageContainer}>
                                                 <Image
-                                                    source={require('../../assets/images/boxsmall.png')}
+                                                    source={require('../../assets/images/small.png')}
                                                     style={styles.parcelImage}
                                                     resizeMode="cover"
                                                 />
@@ -876,14 +884,14 @@ class PlaceOrder extends Component {
                                         </View>
                                     </TouchableWithoutFeedback>
                                     <TouchableWithoutFeedback
-                                         onPress={() => this.selectParcelSize('Medium Box', '../../assets/images/boxmedium.png')}
+                                         onPress={() => this.selectParcelSize('Medium Box', '../../assets/images/medium.png')}
                                     >
                                     <View style={styles.parcelCardContainer} >
                                         <View 
                                             ref={component => this._mediumBox = component}
                                             style={styles.parcelImageContainer}>
                                             <Image
-                                                source={require('../../assets/images/boxmedium.png')}
+                                                source={require('../../assets/images/medium.png')}
                                                 style={styles.parcelImage}
                                                 resizeMode="cover"
                                             />
@@ -896,7 +904,7 @@ class PlaceOrder extends Component {
                                     </View>
                                     </TouchableWithoutFeedback>
                                     <TouchableWithoutFeedback
-                                         onPress={() => this.selectParcelSize('Big Box', '../../assets/images/boxbig.png')}
+                                         onPress={() => this.selectParcelSize('Big Box', '../../assets/images/big.png')}
                                     >
 
                                     <View style={{...styles.parcelCardContainer,paddingRight:20}} >
@@ -904,7 +912,7 @@ class PlaceOrder extends Component {
                                             ref={component => this._bigBox = component}
                                             style={styles.parcelImageContainer}>
                                             <Image
-                                                source={require('../../assets/images/boxbig.png')}
+                                                source={require('../../assets/images/big.png')}
                                                 style={styles.parcelImage}
                                                 resizeMode="cover"
                                             />
@@ -923,7 +931,7 @@ class PlaceOrder extends Component {
                             </View>
                         </View>
                         </View>
-                        <Modal
+                        {/* <Modal
                             transparent={true}
                             visible={this.state.showLoader}
                             onRequestClose={() => this._toggleModalClose()}
@@ -931,7 +939,7 @@ class PlaceOrder extends Component {
                         <View style={{flexDirection: "row", justifyContent:"space-around", padding:10, flex: 1}}>
                             <ActivityIndicator size="large" color={Colors.primaryCOlor}/>
                         </View>
-                        </Modal>
+                        </Modal> */}
                     </ScrollView>
                     <View style={styles.CABcontainer}>
                         <Button  onPress={this.handleSubmit} full style={ styles.continueButtonStyle}>
