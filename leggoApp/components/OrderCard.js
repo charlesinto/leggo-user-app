@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
-import { View } from "react-native";
-import { Card, Text, Header, Button, CardItem, Body,Icon, Accordion,Content } from "native-base";
+import { View, Linking } from "react-native";
+import { Card, Text,Toast, Button,Icon, Accordion } from "native-base";
 import { styles } from "../constants/styles";
 import { FontAwesome } from '@expo/vector-icons';
 import Colors from "../constants/Colors";
@@ -12,6 +12,19 @@ class OrderCard extends Component {
     }
     getCurrentLocation = () => {
         return 'Lekki Toll gate'
+    }
+    _callDriver = mobileNumber => {
+        Linking.canOpenURL(`tel:${mobileNumber}`)
+                          .then(supported => {
+                              if(!supported){
+                                return Toast.show({
+                                            text: 'Some errors encounterd, could not find app',
+                                            type: "error",
+                                            position: "bottom"
+                                        });
+                              }
+                              return Linking.openURL(`tel:${mobileNumber}`)
+                          })
     }
     _renderContent = (item) => {
       return ( 
@@ -57,7 +70,7 @@ class OrderCard extends Component {
                                 <View style={{display: 'flex',flexDirection:'row', justifyContent:'space-between',}}>
                                     <Text style={{...styles.addressDetailText,paddingBottom: 0, fontSize: 16, marginTop: 8}}>{this.props.driver}</Text>
                                     
-                                    <Button  rounded style={{backgroundColor: Colors.secondaryColor,
+                                    <Button onPress={() => this._callDriver(this.props.driverNumber)}  rounded style={{backgroundColor: Colors.secondaryColor,
                                          }}>
                                         {/* <Text>Call</Text> */}
                                         <Icon name="ios-call" />

@@ -126,7 +126,7 @@ class MapScreen extends Component {
                                     
                                 >
                                     <Image source={require('../../assets/images/leggoMan.png')} 
-                                        style={{width: 32, height: 32}} />
+                                        style={{width: 28, height: 28}} />
                                 </MapView.Marker>
                                 <MapViewDirections
                                     origin={this.state.driverLocation}
@@ -135,22 +135,6 @@ class MapScreen extends Component {
                                     strokeColor={Colors.secondaryColor}
                                     strokeWidth={3}
                                 />
-                                {/* <MapView.Polyline
-                                        coordinates={[
-                                            {...this.state.destination},
-                                            {...this.state.driverLocation}
-                                        ]}
-                                        strokeColor={Colors.warning} 
-                                        strokeColors={[
-                                            '#7F0000',
-                                            '#00000000',
-                                            '#B24112',
-                                            '#E5845C',
-                                            '#238C23',
-                                            '#7F0000'
-                                        ]}
-                                        strokeWidth={6}
-                                    /> */}
                             </MapView>
                             <View style={{position:"absolute", top:30, left: 20}}>
                                 <Button transparent onPress={this._handleBackOnPress}>

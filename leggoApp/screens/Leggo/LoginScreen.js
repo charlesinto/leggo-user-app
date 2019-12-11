@@ -22,11 +22,20 @@ class LoginScreen extends Component {
         };
         };
     componentDidMount(){
+        this.getCurrentUserEmail()
         firebase.auth().onAuthStateChanged(user => {
             if(user){
                 this.props.navigation.navigate('Main')
             }
         })
+    }
+    getCurrentUserEmail = async () => {
+        const email = await AsyncStorage.getItem('email')
+        if(typeof email !== 'undefined'){
+            this.setState({
+                email
+            })
+        }
     }
     _handleOnChangeText = (text, target) => {
         this.setState({
@@ -74,6 +83,7 @@ class LoginScreen extends Component {
                             phoneNumber: doc.data().phoneNumber,
                             uid: account.user.uid
                         }))
+                        await AsyncStorage.setItem('email', doc.data().email)
                         this.props.hideSpinner()
                         return this.props.navigation.navigate('Home')
                     }else{

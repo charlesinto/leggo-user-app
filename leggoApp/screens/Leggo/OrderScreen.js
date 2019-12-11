@@ -181,7 +181,8 @@ class OrderScreen extends Component {
                 id={item.id}
                 driver={`${item.driverDetails.firstName} ${item.driverDetails.lastName}`}
                 date={new Date(item.createdAt)}
-                orderNumber={item.deliveryConfirmationCode} 
+                orderNumber={item.deliveryConfirmationCode}
+                driverNumber={item.driverDetails.mobile} 
                 recipient = {item.receiver.fullName}
                 pickup={item.pickup.description}
                 destination={item.destination.description}

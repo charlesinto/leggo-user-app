@@ -1,11 +1,12 @@
 import React, { Component } from 'react';
 import { View, ImageBackground,SafeAreaView, Text,Image,
-  AsyncStorage, TouchableWithoutFeedback, StyleSheet } from "react-native";
+  AsyncStorage, TouchableWithoutFeedback, StyleSheet, Linking, } from "react-native";
 import Colors from "../../constants/Colors";
 import { customStyles, styles } from "../../constants/styles";
-import { firebase } from "../../firebase";
+import { firebase, db } from "../../firebase";
 import * as actions from "../../actions";
 import { connect } from "react-redux";
+import { Toast } from "native-base";
 import { Col, Row, Grid } from "react-native-easy-grid";
 
 class HomeScreen extends Component {
@@ -17,6 +18,7 @@ class HomeScreen extends Component {
         if(!user){
           return this.props.navigation.navigate('Auth')
         }
+        
       })
       this.getCurrentUser()
     }
@@ -57,8 +59,40 @@ class HomeScreen extends Component {
             this.props.navigation.navigate('OrderStack', {otherParam:78})
           break;
           case 'contact':
-          
+            db.collection('customercare').orderBy('createdAt', 'desc')
+                .get().then(doc => {
+                    if(doc.empty){
+                      return ;
+                    }
+                    const customerCareContact = [];
+                    doc.forEach(doc => {
+                      customerCareContact.push({
+                        id: doc.id,
+                        phonenumber: doc.data().phonenumber
+                      })
+                    })
+                    console.log(customerCareContact)
+                    Linking.canOpenURL(`tel:${customerCareContact[0].phonenumber}`)
+                          .then(supported => {
+                              if(!supported){
+                                return Toast.show({
+                                            text: 'Some errors encounterd, could not find app',
+                                            type: "error",
+                                            position: "bottom"
+                                        });
+                              }
+                              return Linking.openURL(`tel:${customerCareContact[0].phonenumber}`)
+                          })
+
+                })
           break;
+          case 'logout':
+            firebase.auth().signOut().then(async() => {
+              await AsyncStorage.removeItem('user')
+             return  this.props.naviagtion.navigate('Auth')
+
+            })
+            .catch(() => {})
           default:
             return;
         }
@@ -94,13 +128,21 @@ class HomeScreen extends Component {
                                </Col>
                                <Col>
                                <View style={{ borderBottomWidth: StyleSheet.hairlineWidth, width:'100%', height:'100%', borderColor:"#a9a9a9"}}>
-                                    <TouchableWithoutFeedback onPress={() => this._handleOnPress('orders')}>
+                                    {/* <TouchableWithoutFeedback onPress={() => this._handleOnPress('orders')}>
                                       <View style={styles.homeScreenIconContainer}>
                                             <Image style={{width: 80, height: 80}} source={require('../../assets/images/wallet.png')} />
                                             <View style={{marginTop: 20}}>
                                               <Text style={{fontFamily:"Lato", color:"#000", fontSize: 18}}>Transactions</Text>
                                             </View>
                                         </View>
+                                      </TouchableWithoutFeedback> */}
+                                      <TouchableWithoutFeedback onPress={() => this._handleOnPress('trackOrder')}>
+                                        <View style={styles.homeScreenIconContainer}>
+                                              <Image style={{width: 80, height: 80}} source={require('../../assets/images/mobile_track.png')} />
+                                              <View style={{marginTop: 20}}>
+                                                <Text style={{fontFamily:"Lato", color:"#000", fontSize: 18}}>Track Orders</Text>
+                                              </View>
+                                          </View>
                                       </TouchableWithoutFeedback>
                                 </View>
                                </Col>
@@ -108,23 +150,31 @@ class HomeScreen extends Component {
                             <Row>
                               <Col>
                                 <View style={{borderRightWidth: StyleSheet.hairlineWidth,width:'100%', height:'100%', borderColor:"#a9a9a9"}}>
-                                    <TouchableWithoutFeedback onPress={() => this._handleOnPress('trackOrder')}>
+                                    {/* <TouchableWithoutFeedback onPress={() => this._handleOnPress('trackOrder')}>
                                     <View style={styles.homeScreenIconContainer}>
                                           <Image style={{width: 80, height: 80}} source={require('../../assets/images/mobile_track.png')} />
                                           <View style={{marginTop: 20}}>
                                             <Text style={{fontFamily:"Lato", color:"#000", fontSize: 18}}>Track Orders</Text>
                                           </View>
                                       </View>
+                                      </TouchableWithoutFeedback> */}
+                                      <TouchableWithoutFeedback onPress={() => this._handleOnPress('contact')}>
+                                        <View style={styles.homeScreenIconContainer}>
+                                            <Image style={{width: 80, height: 80}} source={require('../../assets/images/contact.png')} />
+                                            <View style={{marginTop: 20}}>
+                                              <Text style={{fontFamily:"Lato", color:"#000", fontSize: 18}}>Contact Us</Text>
+                                            </View>
+                                        </View>
                                       </TouchableWithoutFeedback>
                                 </View>
                               </Col>
                               <Col>
                                 <View style={{width:'100%', height:'100%',}}>
-                                  <TouchableWithoutFeedback onPress={() => this._handleOnPress('contact')}>
+                                  <TouchableWithoutFeedback onPress={() => this._handleOnPress('logout')}>
                                     <View style={styles.homeScreenIconContainer}>
-                                            <Image style={{width: 80, height: 80}} source={require('../../assets/images/contact.png')} />
+                                            <Image style={{width: 80, height: 80}} source={require('../../assets/images/logout.jpg')} />
                                             <View style={{marginTop: 20}}>
-                                              <Text style={{fontFamily:"Lato", color:"#000", fontSize: 18}}>Contact Us</Text>
+                                              <Text style={{fontFamily:"Lato", color:"#000", fontSize: 18}}>Log Out</Text>
                                             </View>
                                         </View>
                                       </TouchableWithoutFeedback>
